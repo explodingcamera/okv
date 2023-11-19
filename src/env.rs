@@ -6,8 +6,8 @@ use crate::{
     Result,
 };
 
-// 'c: Columns
-// 'd: Database backend
+/// A database environment
+/// Can be cloned.
 pub struct Env<'d, 'c, D>(Arc<EnvInner<'d, 'c, D>>)
 where
     D: DatabaseBackend<'d, 'c>;
@@ -30,6 +30,7 @@ where
         &self.0.db
     }
 
+    /// Create a new environment backed by the given database.
     pub fn new(db: D) -> Self {
         Self(Arc::new(EnvInner {
             db,
@@ -37,6 +38,24 @@ where
         }))
     }
 
+    /// Open or create a database.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the database.
+    ///
+    /// # Generic Arguments
+    ///
+    /// * `V` - The value type. This must implement [`crate::BytesEncode`].
+    /// * `B` - The value type. This must implement [`crate::BytesEncode`], [`crate::BytesDecode`] and [`crate::BytesDecodeOwned`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let backend = MemDB::new();
+    /// let env = Env::new(backend);
+    /// let mut db = env.open::<&str, SerdeJson<Test>>("test")?;
+    /// ```
     pub fn open<K, V>(&'b self, name: &str) -> Result<Database<K, V, D>> {
         db::new(self, name)
     }

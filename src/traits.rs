@@ -18,11 +18,13 @@ pub trait BytesDecode<'a> {
 
     /// Decode the given bytes as DItem
     fn bytes_decode(bytes: &'a [u8]) -> Result<Self::DItem, DecodeError>;
-    // Decode the given bytes as DItem
-    // fn bytes_decode_owned(bytes: &[u8]) -> Result<Self::DItemOwned, DecodeError>;
 }
 
+/// A trait that represents a decoding structure that owns the data.
 pub trait BytesDecodeOwned {
+    /// The type to decode to
     type DItem;
+
+    /// Decode the given bytes as DItem
     fn bytes_decode_owned(bytes: &[u8]) -> Result<Self::DItem, DecodeError>;
 }

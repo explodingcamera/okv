@@ -6,6 +6,30 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use crate::error::{DecodeError, EncodeError};
 use crate::traits::{BytesDecode, BytesDecodeOwned, BytesEncode};
 
+impl BytesEncode<'_> for bool {
+    type EItem = bool;
+
+    fn bytes_encode(item: &Self::EItem) -> Result<Cow<[u8]>, EncodeError> {
+        Ok(Cow::from([*item as u8].to_vec()))
+    }
+}
+
+impl BytesDecode<'_> for bool {
+    type DItem = bool;
+
+    fn bytes_decode(mut bytes: &'_ [u8]) -> Result<Self::DItem, DecodeError> {
+        bytes.read_u8().map(|b| b != 0).map_err(Into::into)
+    }
+}
+
+impl BytesDecodeOwned for bool {
+    type DItem = bool;
+
+    fn bytes_decode_owned(mut bytes: &[u8]) -> Result<Self::DItem, DecodeError> {
+        bytes.read_u8().map(|b| b != 0).map_err(Into::into)
+    }
+}
+
 impl BytesEncode<'_> for u8 {
     type EItem = u8;
 

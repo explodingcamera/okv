@@ -1,5 +1,8 @@
+#![doc = include_str!("../README.md")]
+
 mod error;
 mod traits;
+pub use traits::*;
 pub mod types;
 
 mod backend;
@@ -8,8 +11,13 @@ mod env;
 
 pub use error::*;
 
+#[cfg(feature = "memdb")]
 pub use backend::mem;
-pub use db::Database;
+
+#[cfg(feature = "rocksdb")]
+pub use backend::rocksdb;
+
+pub use db::{Database, RefValue};
 pub use env::Env;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
@@ -23,10 +31,9 @@ mod test {
     use std::thread;
 
     use crate::backend::mem::MemDB;
-    use crate::backend::DatabaseBackend;
     use crate::env::Env;
     use crate::types::serde::SerdeJson;
-    use crate::{ResultExt, Test};
+    use crate::Test;
 
     #[test]
     fn rocksdb() -> crate::Result<()> {

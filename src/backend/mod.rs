@@ -9,6 +9,7 @@ pub trait DatabaseBackend<'d, 'c>
 where
     Self: Sized,
 {
+    /// The type of the 'column', this is a reference to a database.
     type Column: DatabaseColumn<'c>;
 
     fn create_or_open(&'d self, db: &str) -> Result<Self::Column>;

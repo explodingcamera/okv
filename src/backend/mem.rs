@@ -51,17 +51,13 @@ where
             }
         };
 
-        return Ok(MemDBColumn {
-            _name: name.to_owned(),
-            db: self,
-            column: col,
-        });
+        Ok(MemDBColumn { column: col })
     }
 }
 
 pub struct MemDBColumn<'a> {
-    _name: String,
-    db: &'a MemDB<'a>,
+    // _name: String,
+    // db: &'a MemDB<'a>,
     column: dashmap::mapref::one::Ref<'a, String, DashMap<Vec<u8>, Vec<u8>>>,
 }
 

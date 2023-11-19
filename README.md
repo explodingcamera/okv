@@ -54,9 +54,9 @@ fn main() -> Result<()> {
 
 OKV can work with any type that implements Serialize. Additionally, it supports the following types out of the box without any serialization overhead:
 
-* Integer types: u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
-* Basic types: (), &str, String
-* Binary data: &[u8], Vec<u8>
+* Integer types: [`u8`], [`u16`], [`u32`], [`u64`], [`u128`], [`i8`], [`i16`], [`i32`], [`i64`], [`i128`]
+* Basic types: `()`, [`&str`], [`String`], [`bool`]
+* Binary data: u8 slices (`&[u8]`), byte vectors (`Vec<u8>`), and byte arrays (`[u8; N]`)
 
 # Acknowledgements
 

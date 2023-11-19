@@ -12,22 +12,35 @@ pub struct RocksDb<'a> {
 }
 
 impl RocksDb<'_> {
+    /// Create a new RocksDb instance with default configuration.
+    /// Automatically creates the database if it doesn't exist.
     pub fn new(connect_str: &str) -> Result<Self> {
+        let cfs = Self::list_databases(connect_str)?.unwrap_or(vec![]);
         let mut opts = rocksdb::Options::default();
         opts.create_if_missing(true);
-
-        let cfs = rocksdb::DB::list_cf(&opts, connect_str)?;
-        Ok(Self::new_with_config(opts, connect_str, &cfs)?)
+        Self::new_with_config(opts, connect_str, &cfs)
     }
 
-    pub fn list_databases(connect_str: &str) -> Result<Vec<String>> {
-        Ok(rocksdb::DB::list_cf(
-            &rocksdb::Options::default(),
-            connect_str,
-        )?)
+    /// List all databases (column families) in a RocksDb instance.
+    /// Returns `None` if there was an io error (e.g. the database doesn't exist)
+    pub fn list_databases(connect_str: &str) -> Result<Option<Vec<String>>> {
+        let cfs = match rocksdb::DB::list_cf(&rocksdb::Options::default(), connect_str) {
+            Err(e) => {
+                println!("Error: {:?}", e.kind());
+                if e.kind() != rocksdb::ErrorKind::IOError {
+                    return Ok(None);
+                }
+                Some(vec![])
+            }
+            Ok(cfs) => Some(cfs),
+        };
+
+        Ok(cfs)
     }
 
     // Create a new RocksDb instance with a custom configuration.
+    // Note that rocksdb requires that all databases (column families) are opened at startup.
+    // To get all column families, use `list_databases`.
     pub fn new_with_config(
         config: rocksdb::Options,
         connect_str: &str,
@@ -48,21 +61,13 @@ where
     type Column = RocksDbColumn<'c>;
 
     fn create_or_open(&'b self, name: &str) -> super::Result<Self::Column> {
-        match self.db.cf_handle(name) {
-            Some(handle) => {
-                println!("Column family {} already exists", name);
-
-                return Ok(RocksDbColumn {
-                    _name: name.to_owned(),
-                    _env: self,
-                    cf_handle: handle,
-                });
-            }
-            _ => {}
+        if let Some(handle) = self.db.cf_handle(name) {
+            return Ok(RocksDbColumn {
+                _name: name.to_owned(),
+                _env: self,
+                cf_handle: handle,
+            });
         };
-        panic!("Column family {} already exists", name);
-
-        println!("Creating column family {}", name);
 
         let cf_opts = rocksdb::Options::default();
         self.db.create_cf(name, &cf_opts)?;

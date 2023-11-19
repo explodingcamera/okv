@@ -6,6 +6,8 @@ use crate::env::Env;
 use crate::traits::{BytesDecode, BytesDecodeOwned, BytesEncode};
 use crate::Result;
 
+/// A collection of key-value pairs
+/// Can be cloned.
 pub struct Database<'b, 'c, K, V, D>(Arc<DatabaseInner<'b, 'c, K, V, D>>)
 where
     D: DatabaseBackend<'b, 'c>;
@@ -38,7 +40,6 @@ where
     'b: 'c,
 {
     let column = env.db().create_or_open(name)?;
-
     Ok(Database(Arc::new(DatabaseInner {
         _name: name.to_string(),
         _env: env,
@@ -52,6 +53,7 @@ where
     C: DatabaseColumn<'c> + 'b,
     D: DatabaseBackend<'b, 'c, Column = C>,
 {
+    /// Set a `key` in the database to the serialized value of `val`.
     pub fn set<'k, 'v>(&'v mut self, key: &'k Key::EItem, val: &'v Val::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
@@ -63,6 +65,7 @@ where
         Ok(())
     }
 
+    /// Get a `key` from the database and deserialize it.
     pub fn get<'k, 'v>(&self, key: &'k Key::EItem) -> Result<Val::DItem>
     where
         Key: BytesEncode<'k>,
@@ -88,6 +91,8 @@ where
     C: DatabaseColumnRef<'c> + 'b,
     D: DatabaseBackend<'b, 'c, Column = C>,
 {
+    /// Get a `key` from the database. To deserialize the value, use [`crate::db::RefValue::deserialize()`].
+    /// Allows for more efficient access to the underlying bytes by returning a reference.
     pub fn get_ref<'v, 'k>(&'v self, key: &'k Key::EItem) -> Result<RefValue<C::Ref, Val::DItem>>
     where
         Key: BytesEncode<'k>,
@@ -110,6 +115,9 @@ where
     }
 }
 
+/// A reference to a value in the database.
+/// Allows for more efficient access to the underlying bytes by returning a reference.
+/// To deserialize the value, use [`crate::db::RefValue::deserialize()`].
 pub struct RefValue<'a, T, Val> {
     data: T,
     marker: PhantomData<&'a Val>,
@@ -125,6 +133,7 @@ where
         &self.data
     }
 
+    /// Deserialize the value from the database to the type `Val`.
     pub fn deserialize(&'a self) -> Result<Val::DItem> {
         Ok(Val::bytes_decode(&self.data)?)
     }
