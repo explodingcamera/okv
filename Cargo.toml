@@ -1,10 +1,13 @@
 [package]
 name="okv"
-version="0.0.1"
+version="0.0.2"
 edition="2021"
-description="A simple key-value store"
+description="A versatile key-value storage library"
+keywords=["rocksdb", "key-value", "database", "storage", "memdb", "sqlite", "json", "rmp"]
+categories=["database", "concurrency", "api-bindings"]
 license="MIT OR Apache-2.0"
 authors=["Henry Gressmann <mail@henrygressmann.de>"]
+repository="https://github.com/explodingcamera/okv"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,8 +15,8 @@ authors=["Henry Gressmann <mail@henrygressmann.de>"]
 byteorder="1.5"
 thiserror="1.0.50"
 
-rocksdb={version="0.21.0", optional=true}
-rusqlite={version="0.30", optional=true}
+rocksdb={version="0.21.0", optional=true, default-features=false, features=["multi-threaded-cf"]}
+# rusqlite={version="0.30", optional=true}
 dashmap={version="5.5", optional=true}
 
 serde={version="1.0", optional=true, features=["derive"]}
@@ -23,7 +26,7 @@ rmp-serde={version="1.1", optional=true}
 [features]
 default=["rocksdb", "memdb", "serde", "serde-json", "serde-rmp"]
 rocksdb=["dep:rocksdb"]
-sqlite=["dep:rusqlite"]
+# sqlite=["dep:rusqlite"]
 memdb=["dep:dashmap"]
 
 serde-json=["serde", "dep:serde_json"]

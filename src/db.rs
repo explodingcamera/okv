@@ -73,7 +73,7 @@ where
         let val_bytes =
             self.0
                 .column
-                .get(key_bytes.clone())
+                .get(key_bytes.clone())?
                 .ok_or_else(|| crate::Error::KeyNotFound {
                     key: key_bytes.to_vec(),
                 })?;
@@ -88,7 +88,7 @@ where
     C: DatabaseColumnRef<'c> + 'b,
     D: DatabaseBackend<'b, 'c, Column = C>,
 {
-    pub fn get_ref<'v, 'k>(&'v self, key: &'k Key::EItem) -> Result<Val::DItem>
+    pub fn get_ref<'v, 'k>(&'v self, key: &'k Key::EItem) -> Result<RefValue<C::Ref, Val::DItem>>
     where
         Key: BytesEncode<'k>,
         Val: BytesDecode<'v>,
@@ -98,12 +98,34 @@ where
         let val_bytes =
             self.0
                 .column
-                .get_ref(key_bytes.clone())
+                .get_ref(key_bytes.clone())?
                 .ok_or_else(|| crate::Error::KeyNotFound {
                     key: key_bytes.to_vec(),
                 })?;
 
-        let deserialized = Val::bytes_decode(val_bytes)?;
-        Ok(deserialized)
+        Ok(RefValue {
+            data: val_bytes,
+            marker: PhantomData,
+        })
+    }
+}
+
+pub struct RefValue<'a, T, Val> {
+    data: T,
+    marker: PhantomData<&'a Val>,
+}
+
+impl<'a, T, Val> RefValue<'a, T, Val>
+where
+    T: AsRef<[u8]> + 'a + std::ops::Deref<Target = [u8]> + Send + Sync,
+    Val: BytesDecode<'a>,
+{
+    /// Returns a reference to the inner value.
+    pub fn inner(&self) -> &T {
+        &self.data
+    }
+
+    pub fn deserialize(&'a self) -> Result<Val::DItem> {
+        Ok(Val::bytes_decode(&self.data)?)
     }
 }

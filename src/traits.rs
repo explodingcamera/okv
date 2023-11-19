@@ -15,7 +15,6 @@ pub trait BytesEncode<'a> {
 pub trait BytesDecode<'a> {
     /// The type to decode
     type DItem: 'a;
-    // type DItemOwned;
 
     /// Decode the given bytes as DItem
     fn bytes_decode(bytes: &'a [u8]) -> Result<Self::DItem, DecodeError>;

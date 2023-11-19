@@ -3,23 +3,25 @@ use std::borrow::Cow;
 use crate::Result;
 
 pub mod mem;
+pub mod rocksdb;
 
-pub trait DatabaseBackend<'d, 'c> {
-    type Config: Clone;
+pub trait DatabaseBackend<'d, 'c>
+where
+    Self: Sized,
+{
     type Column: DatabaseColumn<'c>;
 
-    fn new(connect_str: &str) -> Self;
-    fn new_with_config(config: Self::Config) -> Self;
     fn create_or_open(&'d self, db: &str) -> Result<Self::Column>;
 }
 
 pub trait DatabaseColumn<'c> {
     fn set(&self, key: Cow<[u8]>, val: &[u8]) -> Result<()>;
-    fn get(&self, key: Cow<[u8]>) -> Option<Vec<u8>>;
+    fn get(&self, key: Cow<[u8]>) -> Result<Option<Vec<u8>>>;
 }
 
 pub trait DatabaseColumnRef<'c>: DatabaseColumn<'c> {
-    fn get_ref(&self, key: Cow<[u8]>) -> Option<&[u8]>;
+    type Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync;
+    fn get_ref(&self, key: Cow<[u8]>) -> Result<Option<Self::Ref>>;
 }
 
 pub trait DatabaseColumnTxn<'c>: DatabaseColumn<'c> {

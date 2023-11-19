@@ -1,5 +1,21 @@
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, Error>;
+
+pub trait ResultExt<T> {
+    fn unwrap_not_found(self) -> Result<Option<T>>;
+}
+
+impl<T> ResultExt<T> for Result<T> {
+    fn unwrap_not_found(self) -> Result<Option<T>> {
+        match self {
+            Ok(v) => Ok(Some(v)),
+            Err(Error::KeyNotFound { .. }) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Decode error: {0}")]
@@ -12,6 +28,16 @@ pub enum Error {
 
     #[error("Database not found: {db}")]
     DatabaseNotFound { db: String },
+
+    #[error("Database locked: {db}")]
+    DatabaseLocked { db: String },
+
+    #[cfg(feature = "rocksdb")]
+    #[error("RocksDB error: {0}")]
+    RocksDB(#[from] rocksdb::Error),
+
+    #[error("Unknown error: {0}")]
+    Unknown(String),
 }
 
 #[derive(Error, Debug)]

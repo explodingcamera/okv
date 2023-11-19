@@ -1,26 +1,29 @@
 # OKV - Okay Key-Value Storage
 
-## Credits
-
-A lot of the inspiration for the okv api comes from the amazing [heed](https://github.com/meilisearch/heed) crate. Thanks to the authors of heed for their work!
+OKV is a versatile key-value storage library designed for Rust. It offers a simple yet powerful API, inspired by the [heed](https://github.com/meilisearch/heed) crate, and supports various databases and serialization formats.
 
 ## Features
 
-`default`: `memdb` and `serde-json`
+- **Multiple Database Backends**: 
+  - `memdb`: In-memory database for rapid prototyping and testing.
+  - `rocksdb`: RocksDB integration for robust, disk-based storage.
+  <!-- - `sqlite`: SQLite support for relational data storage. -->
+- **Serialization Formats**: 
+  - `serde-json`: JSON serialization for human-readable data storage.
+  - `serde-rmp`: MessagePack serialization for efficient binary format.
 
-### Databases
-`memdb`: In-memory database
-`rocksdb`: RocksDB database
-`sqlite`: SQLite database
+## Installation
 
-### Serializers
-`serde-json`: JSON serialization
-`serde-rmp`: MessagePack serialization
+Add OKV to your project:
 
-## Usage
+```bash
+cargo add okv
+```
+
+# Quick Start
 
 ```rust
-use okv::{Database, MemDB, SerdeJson};
+use okv::{Database, MemDB, SerdeJson, Env, Result};
 
 struct Test {
     name: String,
@@ -28,29 +31,39 @@ struct Test {
 }
 
 fn main() -> Result<()> {
-    let mut storage = MemDB::new(); // or RocksDB::new("path/to/db") or SQLite::new("path/to/db")
+    // Initialize storage backend
+    let mut storage = MemDB::new();
     let env = Env::new(storage);
 
+    // Open a database with specified serializers
     let mut db = env.open::<&str, SerdeJson<Test>>("my_database")?; // or SerdeRmp
 
-    let test = Test {
-        name: "John".to_string(),
-        age: 32,
-    };
-
+    // Working with data
+    let test = Test { name: "John".to_string(), age: 32 };
     db.set("test", &test)?;
     let result = db.get("test")?;
 
+    // Verify the operation
     assert_eq!(result, Some(test));
+
+    Ok(())
 }
 ```
 
-### Supported types
+# Supported Types
 
-Any type that implements `Serialize` can be used as a key or value. The following types are supported out of the box:
+OKV can work with any type that implements Serialize. Additionally, it supports the following types out of the box without any serialization overhead:
 
-- `u8`, `u16`, `u32`, `u64`, `u128`, `usize`
-- `i8`, `i16`, `i32`, `i64`, `i128`, `isize`
-- `()`
-- `&str`, `String`
-- `&[u8]`, `Vec<u8>`
+* Integer types: u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+* Basic types: (), &str, String
+* Binary data: &[u8], Vec<u8>
+
+# Acknowledgements
+
+Special thanks to the authors of the [heed](https://github.com/meilisearch/heed) crate for their inspiring work, which greatly influenced the development of OKV.
+
+# License
+
+Licensed under either of [Apache License, Version 2.0](./LICENSE-APACHE) or [MIT license](./LICENSE-MIT) at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in OKV by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
