@@ -1,7 +1,10 @@
 [package]
 name="okv"
-version="0.1.0"
+version="0.0.1"
 edition="2021"
+description="A simple key-value store"
+license="MIT OR Apache-2.0"
+authors=["Henry Gressmann <mail@henrygressmann.de>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

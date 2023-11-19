@@ -19,7 +19,7 @@ impl BytesDecode<'static> for () {
     fn bytes_decode(bytes: &[u8]) -> Result<Self::DItem, DecodeError> {
         bytes
             .is_empty()
-            .then(|| ())
+            .then_some(())
             .ok_or(DecodeError::SizeMismatch)
     }
 }
@@ -30,7 +30,7 @@ impl BytesDecodeOwned for () {
     fn bytes_decode_owned(bytes: &[u8]) -> Result<Self::DItem, DecodeError> {
         bytes
             .is_empty()
-            .then(|| ())
+            .then_some(())
             .ok_or(DecodeError::SizeMismatch)
     }
 }
