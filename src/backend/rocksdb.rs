@@ -58,8 +58,12 @@ impl<'b, 'c> DatabaseBackend<'b, 'c> for RocksDb<'b>
 where
     'b: 'c,
 {
-    type Column = RocksDbColumn<'c>;
+    type Inner = rocksdb::DB;
+    fn inner(&self) -> &Self::Inner {
+        &self.db
+    }
 
+    type Column = RocksDbColumn<'c>;
     fn create_or_open(&'b self, name: &str) -> super::Result<Self::Column> {
         if let Some(handle) = self.db.cf_handle(name) {
             return Ok(RocksDbColumn {
@@ -90,6 +94,12 @@ pub struct RocksDbColumn<'a> {
 }
 
 impl<'b, 'c> DatabaseColumn<'c> for RocksDbColumn<'b> {
+    type Inner = Arc<rocksdb::BoundColumnFamily<'b>>;
+
+    fn inner(&self) -> &Self::Inner {
+        &self.cf_handle
+    }
+
     fn set(&self, key: Cow<[u8]>, val: &[u8]) -> Result<()> {
         self._env.db.put_cf(&self.cf_handle, key, val)?;
         Ok(())

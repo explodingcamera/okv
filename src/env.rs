@@ -30,6 +30,12 @@ where
         &self.0.db
     }
 
+    /// Returns a reference to the underlying column.
+    /// Can be used to access the database directly.
+    pub fn inner(&self) -> &D::Inner {
+        self.0.db.inner()
+    }
+
     /// Create a new environment backed by the given database.
     pub fn new(db: D) -> Self {
         Self(Arc::new(EnvInner {

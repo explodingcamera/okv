@@ -53,6 +53,12 @@ where
     C: DatabaseColumn<'c> + 'b,
     D: DatabaseBackend<'b, 'c, Column = C>,
 {
+    /// Returns a reference to the underlying column.
+    /// Can be used to access the database directly.
+    pub fn inner(&self) -> &C::Inner {
+        self.0.column.inner()
+    }
+
     /// Set a `key` in the database to the serialized value of `val`.
     pub fn set<'k, 'v>(&'v mut self, key: &'k Key::EItem, val: &'v Val::EItem) -> Result<()>
     where

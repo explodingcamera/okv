@@ -31,6 +31,11 @@ where
     'b: 'c,
     Self: Sized,
 {
+    type Inner = DashMap<String, DashMap<Vec<u8>, Vec<u8>>>;
+    fn inner(&self) -> &Self::Inner {
+        &self.columns
+    }
+
     type Column = MemDBColumn<'c>;
 
     fn create_or_open(&'b self, name: &str) -> super::Result<Self::Column> {
@@ -62,6 +67,12 @@ pub struct MemDBColumn<'a> {
 }
 
 impl<'a, 'c> DatabaseColumn<'c> for MemDBColumn<'a> {
+    type Inner = dashmap::mapref::one::Ref<'a, String, DashMap<Vec<u8>, Vec<u8>>>;
+
+    fn inner(&self) -> &Self::Inner {
+        &self.column
+    }
+
     fn set(&self, key: Cow<[u8]>, val: &[u8]) -> super::Result<()> {
         self.column.insert(key.to_vec(), val.to_vec());
         Ok(())
