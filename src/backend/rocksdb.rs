@@ -1,11 +1,12 @@
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 use rocksdb::DBPinnableSlice;
 
 use crate::{Error, Result};
 
-use super::{DatabaseBackend, DatabaseColumn, DatabaseColumnRef};
+use super::{DatabaseBackend, DatabaseColumn, DatabaseColumnRef, Flushable};
 
+/// A RocksDB database backend.
 pub struct RocksDb<'a> {
     db: rocksdb::DB,
     marker: std::marker::PhantomData<&'a ()>,
@@ -38,9 +39,9 @@ impl RocksDb<'_> {
         Ok(cfs)
     }
 
-    // Create a new RocksDb instance with a custom configuration.
-    // Note that rocksdb requires that all databases (column families) are opened at startup.
-    // To get all column families, use `list_databases`.
+    /// Create a new RocksDb instance with a custom configuration.
+    /// Note that rocksdb requires that all databases (column families) are opened at startup.
+    /// To get all column families, use `list_databases`.
     pub fn new_with_config(
         config: rocksdb::Options,
         connect_str: &str,
@@ -87,29 +88,71 @@ where
     }
 }
 
+impl Flushable for RocksDb<'_> {
+    fn flush(&self) -> Result<()> {
+        self.db.flush()?;
+        Ok(())
+    }
+}
+
+/// A RocksDB database column family.
 pub struct RocksDbColumn<'a> {
     _name: String,
     _env: &'a RocksDb<'a>,
     cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
 }
 
-impl<'b, 'c> DatabaseColumn<'c> for RocksDbColumn<'b> {
+impl<'b> DatabaseColumn for RocksDbColumn<'b> {
     type Inner = Arc<rocksdb::BoundColumnFamily<'b>>;
 
     fn inner(&self) -> &Self::Inner {
         &self.cf_handle
     }
 
-    fn set(&self, key: Cow<[u8]>, val: &[u8]) -> Result<()> {
+    fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
         self._env.db.put_cf(&self.cf_handle, key, val)?;
         Ok(())
     }
 
-    fn get(&self, key: Cow<[u8]>) -> Result<Option<Vec<u8>>> {
+    fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
         match self._env.db.get_cf(&self.cf_handle, key)? {
             Some(x) => Ok(Some(x.to_vec())),
             None => Ok(None),
         }
+    }
+
+    fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool> {
+        match self._env.db.get_cf(&self.cf_handle, key)? {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
+    }
+
+    fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
+        self._env.db.delete_cf(&self.cf_handle, key)?;
+        Ok(())
+    }
+
+    fn clear(&self) -> Result<()> {
+        self._env.db.drop_cf(&self._name)?;
+        self._env
+            .db
+            .create_cf(&self._name, &rocksdb::Options::default())?;
+
+        Ok(())
+    }
+
+    fn get_multi<I>(&self, keys: I) -> Result<Vec<Option<Vec<u8>>>>
+    where
+        I: IntoIterator,
+        I::Item: AsRef<[u8]>,
+    {
+        let keys = keys.into_iter().map(|key| (&self.cf_handle, key));
+        let values = self._env.db.multi_get_cf(keys);
+        let values = values
+            .into_iter()
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(values)
     }
 }
 
@@ -119,11 +162,35 @@ where
 {
     type Ref = DBPinnableSlice<'c>;
 
-    fn get_ref(&self, key: Cow<[u8]>) -> Result<Option<Self::Ref>> {
+    fn get_ref(&self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
         let x = self._env.db.get_pinned_cf(&self.cf_handle, key)?;
         let Some(x) = x else {
             return Ok(None);
         };
         Ok(Some(x))
+    }
+
+    fn get_multi_ref<I>(&self, keys: I) -> Result<Vec<Option<Self::Ref>>>
+    where
+        I: IntoIterator,
+        I::Item: AsRef<[u8]>,
+    {
+        let values = self
+            ._env
+            .db
+            .batched_multi_get_cf(&self.cf_handle, keys, false);
+
+        let values = values
+            .into_iter()
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        Ok(values)
+    }
+}
+
+impl Flushable for RocksDbColumn<'_> {
+    fn flush(&self) -> Result<()> {
+        self._env.db.flush_cf(&self.cf_handle)?;
+        Ok(())
     }
 }

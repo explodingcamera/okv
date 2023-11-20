@@ -1,10 +1,7 @@
 // TODO: maybe use https://crates.io/crates/enum_dispatch instead of this?
 
-use std::borrow::Cow;
-
+use super::{DatabaseBackend, DatabaseColumn};
 use crate::Result;
-
-use super::{DatabaseBackend, DatabaseColumn, DatabaseColumnRef};
 
 pub enum AnyDatabaseBackend<'c> {
     #[cfg(feature = "memdb")]
@@ -27,6 +24,14 @@ macro_rules! dispatch {
             AnyDatabaseBackendColumn::MemDB(ref col) => col.$func($($args),*),
             #[cfg(feature = "rocksdb")]
             AnyDatabaseBackendColumn::RocksDB(ref col) => col.$func($($args),*),
+        }
+    };
+    ($self:ident, $func:ident) => {
+        match $self.column {
+            #[cfg(feature = "memdb")]
+            AnyDatabaseBackendColumn::MemDB(ref col) => col.$func(),
+            #[cfg(feature = "rocksdb")]
+            AnyDatabaseBackendColumn::RocksDB(ref col) => col.$func(),
         }
     };
 }
@@ -80,17 +85,37 @@ pub struct AnyDatabaseColumn<'c> {
     column: AnyDatabaseBackendColumn<'c>,
 }
 
-impl<'a, 'c> DatabaseColumn<'c> for AnyDatabaseColumn<'a> {
+impl<'a> DatabaseColumn for AnyDatabaseColumn<'a> {
     type Inner = AnyDatabaseBackendColumn<'a>;
     fn inner(&self) -> &Self::Inner {
         &self.column
     }
 
-    fn set(&self, key: Cow<[u8]>, val: &[u8]) -> Result<()> {
+    fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
         dispatch!(self, set, key, val)
     }
 
-    fn get(&self, key: Cow<[u8]>) -> Result<Option<Vec<u8>>> {
+    fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
         dispatch!(self, get, key)
+    }
+
+    fn get_multi<I>(&self, keys: I) -> Result<Vec<Option<Vec<u8>>>>
+    where
+        I: IntoIterator,
+        I::Item: AsRef<[u8]>,
+    {
+        dispatch!(self, get_multi, keys)
+    }
+
+    fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool> {
+        dispatch!(self, contains, key)
+    }
+
+    fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
+        dispatch!(self, delete, key)
+    }
+
+    fn clear(&self) -> Result<()> {
+        dispatch!(self, clear)
     }
 }

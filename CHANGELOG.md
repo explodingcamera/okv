@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* added `Database::get_multi`, `Database::clear`, `Database::remove`,`Database::contains`, `Database::flush` methods
+* Refactored `Database` to use the new DBCommon trait
 * Added `.inner()` methods to `Env` and `Database` to allow access to the underlying database
 * Experimental `AnyDatabase` to allow for multiple database types to be used in the same application 
 

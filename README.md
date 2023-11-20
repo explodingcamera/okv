@@ -1,5 +1,7 @@
 # OKV - Okay Key-Value Storage
 
+[![docs.rs](https://img.shields.io/docsrs/okv?logo=rust)](https://docs.rs/okv) [![Crates.io](https://img.shields.io/crates/v/okv.svg?logo=rust)](https://crates.io/crates/okv) [![Crates.io](https://img.shields.io/crates/l/okv.svg)](./LICENSE-APACHE) 
+
 OKV is a versatile key-value storage library designed for Rust. It offers a simple yet powerful API, inspired by the [heed](https://github.com/meilisearch/heed) crate, and supports various databases and serialization formats.
 
 ## Features
@@ -23,8 +25,11 @@ cargo add okv
 # Quick Start
 
 ```rust
-use okv::{Database, MemDB, SerdeJson, Env, Result};
+use okv::{Database, Env, Result};
+use okv::mem::MemDB;
+use okv::types::serde::SerdeJson;
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq)]
 struct Test {
     name: String,
     age: u32,
@@ -44,7 +49,7 @@ fn main() -> Result<()> {
     let result = db.get("test")?;
 
     // Verify the operation
-    assert_eq!(result, Some(test));
+    assert_eq!(result, test);
 
     Ok(())
 }

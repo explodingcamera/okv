@@ -58,9 +58,10 @@ where
     /// # Examples
     ///
     /// ```
+    /// use okv::{Env, mem::MemDB};
     /// let backend = MemDB::new();
     /// let env = Env::new(backend);
-    /// let mut db = env.open::<&str, SerdeJson<Test>>("test")?;
+    /// let mut db = env.open::<&str, &str>("test").unwrap();
     /// ```
     pub fn open<K, V>(&'b self, name: &str) -> Result<Database<K, V, D>> {
         db::new(self, name)

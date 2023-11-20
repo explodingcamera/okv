@@ -1,8 +1,11 @@
 #![doc = include_str!("../README.md")]
+#![warn(missing_docs)]
 
 mod error;
 mod traits;
 pub use traits::*;
+
+/// Types for serialization
 pub mod types;
 
 mod backend;
@@ -17,23 +20,22 @@ pub use backend::mem;
 #[cfg(feature = "rocksdb")]
 pub use backend::rocksdb;
 
-pub use db::{Database, RefValue};
+pub use db::Database;
 pub use env::Env;
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
-struct Test {
-    name: String,
-    age: u32,
-}
 
 #[cfg(test)]
 mod test {
     use std::thread;
 
     use crate::backend::mem::MemDB;
-    use crate::env::Env;
     use crate::types::serde::SerdeJson;
-    use crate::Test;
+    use crate::Env;
+
+    #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+    struct Test {
+        name: String,
+        age: u32,
+    }
 
     #[test]
     fn rocksdb() -> crate::Result<()> {
