@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.0.4 - 2023-11-21
 
 * added `Database::get_multi`, `Database::clear`, `Database::remove`,`Database::contains`, `Database::flush` methods
 * Refactored `Database` to use the new DBCommon trait
