@@ -2,6 +2,23 @@ use std::borrow::Cow;
 
 use crate::{types::RefValue, DecodeError, EncodeError, Result};
 
+/// A trait that represents a flushable structure.
+/// This is used to flush the database on supported backends.
+pub trait Flushable {
+    /// Flush the database to disk.
+    fn flush(&self) -> Result<()>;
+}
+
+/// A trait that represents an innerable structure.
+/// This is used to access the database directly.
+pub trait Innerable {
+    /// The inner type
+    type Inner;
+
+    /// Get a reference to the inner type
+    fn inner(&self) -> &Self::Inner;
+}
+
 /// A trait that represents an encoding structure.
 pub trait BytesEncode<'a> {
     /// The type to encode

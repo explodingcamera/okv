@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::RocksDbImpl;
-use crate::{backend::Innerable, Result};
+use crate::{Innerable, Result};
 use inherent::inherent;
 
 /// A RocksDB database backend with pessimistic transactions.

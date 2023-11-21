@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use super::RocksDbImpl;
 use crate::{
-    backend::{Flushable, Innerable},
-    Result,
+    Result, {Flushable, Innerable},
 };
 use inherent::inherent;
 
@@ -25,6 +24,14 @@ pub struct RocksDbOptimisticColumn<'a> {
     pub(crate) _name: String,
     pub(crate) _env: &'a RocksDbOptimistic<'a>,
     pub(crate) cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
+}
+
+impl<'a> Innerable for RocksDbOptimisticColumn<'a> {
+    type Inner = Arc<rocksdb::BoundColumnFamily<'a>>;
+
+    fn inner(&self) -> &Self::Inner {
+        &self.cf_handle
+    }
 }
 
 #[inherent]

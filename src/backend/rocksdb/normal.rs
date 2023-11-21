@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
 use super::RocksDbImpl;
-use crate::{
-    backend::{Flushable, Innerable},
-    Result,
-};
+use crate::{backend::DatabaseColumnRef, Flushable, Innerable, Result};
 use inherent::inherent;
+use rocksdb::DBPinnableSlice;
 
 /// A RocksDB database backend.
 pub struct RocksDb<'a> {
@@ -59,5 +57,37 @@ impl RocksDbImpl for RocksDb<'_> {
             db,
             marker: Default::default(),
         })
+    }
+}
+
+impl<'b, 'c> DatabaseColumnRef<'c> for RocksDbColumn<'b>
+where
+    'b: 'c,
+{
+    type Ref = DBPinnableSlice<'c>;
+
+    fn get_ref(&self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
+        let x = self._env.db.get_pinned_cf(&self.cf_handle, key)?;
+        let Some(x) = x else {
+            return Ok(None);
+        };
+        Ok(Some(x))
+    }
+
+    fn get_multi_ref<I>(&self, keys: I) -> Result<Vec<Option<Self::Ref>>>
+    where
+        I: IntoIterator,
+        I::Item: AsRef<[u8]>,
+    {
+        let values = self
+            ._env
+            .db
+            .batched_multi_get_cf(&self.cf_handle, keys, false);
+
+        let values = values
+            .into_iter()
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        Ok(values)
     }
 }

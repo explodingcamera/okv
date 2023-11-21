@@ -1,52 +1,7 @@
-use super::{DatabaseBackend, DatabaseColumn};
-use crate::{Error, Result};
-use rocksdb::{OptimisticTransactionDB, TransactionDB, DB};
+use crate::backend::DatabaseColumn;
+use crate::backend::{DatabaseBackend, DatabaseColumn, DatabaseColumnRef};
 
-mod normal;
-mod optimistic;
-mod pessimistic;
-pub use normal::*;
-pub use optimistic::*;
-pub use pessimistic::*;
-
-trait RocksDbImpl: Sized {
-    type RocksdbOptions: Default;
-
-    /// Create a new RocksDb instance with default configuration.
-    /// Automatically creates the database if it doesn't exist.
-    fn new(connect_str: &str) -> Result<Self> {
-        let cfs = Self::list_databases(connect_str)?.unwrap_or(vec![]);
-        let opts = Self::RocksdbOptions::default();
-        Self::new_with_config(opts, connect_str, &cfs)
-    }
-
-    /// List all databases (column families) in a RocksDb instance.
-    /// Returns `None` if there was an io error (e.g. the database doesn't exist)
-    fn list_databases(connect_str: &str) -> Result<Option<Vec<String>>> {
-        let cfs = match rocksdb::DB::list_cf(&rocksdb::Options::default(), connect_str) {
-            Err(e) => {
-                println!("Error: {:?}", e.kind());
-                if e.kind() != rocksdb::ErrorKind::IOError {
-                    return Ok(None);
-                }
-                Some(vec![])
-            }
-            Ok(cfs) => Some(cfs),
-        };
-
-        Ok(cfs)
-    }
-
-    /// Create a new RocksDb instance with a custom configuration.
-    /// Note that rocksdb requires that all databases (column families) are opened at startup.
-    /// To get all column families, use `list_databases`.
-    fn new_with_config(
-        config: Self::RocksdbOptions,
-        connect_str: &str,
-        cfs: &[String],
-    ) -> Result<Self>;
-}
-
+#[macro_export]
 macro_rules! implement_column {
     ($name:ident) => {
         impl<'a> DatabaseColumn for $name<'a> {
@@ -99,6 +54,7 @@ macro_rules! implement_column {
     };
 }
 
+#[macro_export]
 macro_rules! implement_backend {
     ($name:ident, $col:ident, $db:ident) => {
         impl<'a> DatabaseBackend<'a> for $name<'a> {
@@ -134,15 +90,3 @@ macro_rules! implement_backend {
         }
     };
 }
-
-implement_column!(RocksDbOptimisticColumn);
-implement_column!(RocksDbPessimisticColumn);
-implement_column!(RocksDbColumn);
-
-implement_backend!(
-    RocksDbOptimistic,
-    RocksDbOptimisticColumn,
-    OptimisticTransactionDB
-);
-implement_backend!(RocksDbPessimistic, RocksDbPessimisticColumn, TransactionDB);
-implement_backend!(RocksDb, RocksDbColumn, DB);

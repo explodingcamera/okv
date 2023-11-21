@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Innerable, Result};
 
 #[cfg(feature = "unstable_any")]
 /// Any database backend (requires `unstable_any` feature)
@@ -39,17 +39,12 @@ pub trait DatabaseColumnRef<'c>: DatabaseColumn {
         I::Item: AsRef<[u8]>;
 }
 
-pub trait DatabaseColumnTxn<'c>: DatabaseColumn {
-    fn begin(&self) -> Result<()>;
+pub trait DatabaseTxn: DatabaseColumn {
     fn commit(&self) -> Result<()>;
     fn rollback(&self) -> Result<()>;
 }
 
-pub trait Flushable {
-    fn flush(&self) -> Result<()>;
-}
-
-pub trait Innerable {
-    type Inner;
-    fn inner(&self) -> &Self::Inner;
+pub trait DatabaseColumnTxn<'c>: DatabaseColumn {
+    type Txn: DatabaseTxn;
+    fn transaction(&self) -> Result<Self::Txn>;
 }

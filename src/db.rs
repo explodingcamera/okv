@@ -3,11 +3,11 @@ use std::sync::Arc;
 
 use inherent::inherent;
 
-use crate::backend::{DatabaseBackend, DatabaseColumn, DatabaseColumnRef, Flushable, Innerable};
+use crate::backend::{DatabaseBackend, DatabaseColumn, DatabaseColumnRef};
 use crate::env::Env;
 use crate::traits::{BytesDecode, BytesDecodeOwned, BytesEncode};
 use crate::types::RefValue;
-use crate::Result;
+use crate::{Flushable, Innerable, Result};
 
 /// A collection of key-value pairs
 /// Can be cloned.
