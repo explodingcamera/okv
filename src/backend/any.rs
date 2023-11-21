@@ -1,6 +1,6 @@
 // TODO: maybe use https://crates.io/crates/enum_dispatch instead of this?
 
-use super::{DatabaseBackend, DatabaseColumn};
+use super::{DatabaseBackend, DatabaseColumn, Innerable};
 use crate::Result;
 
 pub enum AnyDatabaseBackend<'c> {
@@ -50,15 +50,17 @@ impl<'c> AnyDatabase<'c> {
     }
 }
 
-impl<'b, 'c> DatabaseBackend<'b, 'c> for AnyDatabase<'b>
-where
-    'b: 'c,
-    Self: Sized,
-{
-    type Inner = AnyDatabaseBackend<'c>;
-    type Column = AnyDatabaseColumn<'c>;
+impl<'a> Innerable for AnyDatabase<'a> {
+    type Inner = AnyDatabaseBackend<'a>;
+    fn inner(&self) -> &Self::Inner {
+        &self.backend
+    }
+}
 
-    fn create_or_open(&'b self, name: &str) -> Result<Self::Column> {
+impl<'a> DatabaseBackend<'a> for AnyDatabase<'a> {
+    type Column = AnyDatabaseColumn<'a>;
+
+    fn create_or_open(&'a self, name: &str) -> Result<Self::Column> {
         let res = match self.backend {
             #[cfg(feature = "memdb")]
             AnyDatabaseBackend::MemDB(ref db) => {
@@ -75,9 +77,6 @@ where
             column: res,
         })
     }
-    fn inner(&self) -> &Self::Inner {
-        &self.backend
-    }
 }
 
 pub struct AnyDatabaseColumn<'c> {
@@ -85,12 +84,14 @@ pub struct AnyDatabaseColumn<'c> {
     column: AnyDatabaseBackendColumn<'c>,
 }
 
-impl<'a> DatabaseColumn for AnyDatabaseColumn<'a> {
+impl<'a> Innerable for AnyDatabaseColumn<'a> {
     type Inner = AnyDatabaseBackendColumn<'a>;
     fn inner(&self) -> &Self::Inner {
         &self.column
     }
+}
 
+impl<'a> DatabaseColumn for AnyDatabaseColumn<'a> {
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
         dispatch!(self, set, key, val)
     }

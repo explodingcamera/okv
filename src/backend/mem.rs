@@ -1,6 +1,6 @@
 use crate::{Error, Result};
 
-use super::{DatabaseBackend, DatabaseColumn};
+use super::{DatabaseBackend, DatabaseColumn, Innerable};
 use dashmap::{try_result::TryResult, DashMap};
 
 /// An in-memory database backend.
@@ -28,19 +28,17 @@ impl Default for MemDB<'_> {
     }
 }
 
-impl<'b, 'c> DatabaseBackend<'b, 'c> for MemDB<'b>
-where
-    'b: 'c,
-    Self: Sized,
-{
+impl<'a> Innerable for MemDB<'a> {
     type Inner = DashMap<String, DashMap<Vec<u8>, Vec<u8>>>;
     fn inner(&self) -> &Self::Inner {
         &self.columns
     }
+}
 
-    type Column = MemDBColumn<'c>;
+impl<'a> DatabaseBackend<'a> for MemDB<'a> {
+    type Column = MemDBColumn<'a>;
 
-    fn create_or_open(&'b self, name: &str) -> super::Result<Self::Column> {
+    fn create_or_open(&'a self, name: &str) -> super::Result<Self::Column> {
         let col = match self.columns.try_get(name) {
             TryResult::Absent => {
                 let col = DashMap::new();
@@ -69,13 +67,15 @@ pub struct MemDBColumn<'a> {
     column: dashmap::mapref::one::Ref<'a, String, DashMap<Vec<u8>, Vec<u8>>>,
 }
 
-impl<'a> DatabaseColumn for MemDBColumn<'a> {
+impl<'a> Innerable for MemDBColumn<'a> {
     type Inner = dashmap::mapref::one::Ref<'a, String, DashMap<Vec<u8>, Vec<u8>>>;
 
     fn inner(&self) -> &Self::Inner {
         &self.column
     }
+}
 
+impl<'a> DatabaseColumn for MemDBColumn<'a> {
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> super::Result<()> {
         self.column.insert(key.as_ref().to_vec(), val.to_vec());
         Ok(())

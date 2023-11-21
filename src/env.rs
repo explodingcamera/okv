@@ -8,24 +8,18 @@ use crate::{
 
 /// A database environment
 /// Can be cloned.
-pub struct Env<'d, 'c, D>(Arc<EnvInner<'d, 'c, D>>)
-where
-    D: DatabaseBackend<'d, 'c>;
+pub struct Env<'a, D: DatabaseBackend<'a>>(Arc<EnvInner<'a, D>>);
 
-impl<'b, 'c, D> Clone for Env<'b, 'c, D>
+impl<'a, D> Clone for Env<'a, D>
 where
-    D: DatabaseBackend<'b, 'c>,
+    D: DatabaseBackend<'a>,
 {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<'b, 'c, D> Env<'b, 'c, D>
-where
-    D: DatabaseBackend<'b, 'c>,
-    'b: 'c,
-{
+impl<'a, D: DatabaseBackend<'a>> Env<'a, D> {
     pub(crate) fn db(&self) -> &D {
         &self.0.db
     }
@@ -40,7 +34,7 @@ where
     pub fn new(db: D) -> Self {
         Self(Arc::new(EnvInner {
             db,
-            marker: std::marker::PhantomData,
+            marker: Default::default(),
         }))
     }
 
@@ -63,12 +57,12 @@ where
     /// let env = Env::new(backend);
     /// let mut db = env.open::<&str, &str>("test").unwrap();
     /// ```
-    pub fn open<K, V>(&'b self, name: &str) -> Result<Database<K, V, D>> {
+    pub fn open<K, V>(&'a self, name: &str) -> Result<Database<'a, K, V, D>> {
         db::new(self, name)
     }
 }
 
-struct EnvInner<'d, 'c, D: DatabaseBackend<'d, 'c>> {
+struct EnvInner<'a, D: DatabaseBackend<'a>> {
     pub(crate) db: D,
-    marker: std::marker::PhantomData<(&'d (), &'c ())>,
+    marker: std::marker::PhantomData<&'a ()>,
 }

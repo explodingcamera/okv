@@ -12,23 +12,13 @@ pub mod mem;
 /// RocksDB database backend (requires `rocksdb` feature)
 pub mod rocksdb;
 
-pub trait DatabaseBackend<'d, 'c>
-where
-    Self: Sized,
-{
-    /// The type of the 'inner', this is a reference to the underlying database backend.
-    type Inner;
-    fn inner(&self) -> &Self::Inner;
-
+pub trait DatabaseBackend<'a>: Innerable + Sized + Send + Sync + 'a {
     /// The type of the 'column', this is a reference to a database.
     type Column: DatabaseColumn;
-    fn create_or_open(&'d self, db: &str) -> Result<Self::Column>;
+    fn create_or_open(&'a self, db: &str) -> Result<Self::Column>;
 }
 
 pub trait DatabaseColumn {
-    type Inner;
-    fn inner(&self) -> &Self::Inner;
-
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()>;
     fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>>;
     fn get_multi<I>(&self, keys: I) -> Result<Vec<Option<Vec<u8>>>>
@@ -57,4 +47,9 @@ pub trait DatabaseColumnTxn<'c>: DatabaseColumn {
 
 pub trait Flushable {
     fn flush(&self) -> Result<()>;
+}
+
+pub trait Innerable {
+    type Inner;
+    fn inner(&self) -> &Self::Inner;
 }
