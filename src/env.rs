@@ -3,9 +3,9 @@ use std::sync::Arc;
 
 /// A database environment
 /// Can be cloned.
-pub struct Env<'a, D: DatabaseBackend>(Arc<EnvInner<'a, D>>);
+pub struct Env<D: DatabaseBackend>(Arc<EnvInner<D>>);
 
-impl<'a, D> Clone for Env<'a, D>
+impl<'a, D> Clone for Env<D>
 where
     D: DatabaseBackend,
 {
@@ -14,7 +14,7 @@ where
     }
 }
 
-impl<'a, D: DatabaseBackend> Env<'a, D> {
+impl<'a, D: DatabaseBackend> Env<D> {
     pub(crate) fn db(&self) -> &D {
         &self.0.db
     }
@@ -27,10 +27,7 @@ impl<'a, D: DatabaseBackend> Env<'a, D> {
 
     /// Create a new environment backed by the given database.
     pub fn new(db: D) -> Self {
-        Self(Arc::new(EnvInner {
-            db,
-            marker: Default::default(),
-        }))
+        Self(Arc::new(EnvInner { db }))
     }
 
     /// Open or create a database.
@@ -89,7 +86,6 @@ where
     type Val = V;
 }
 
-struct EnvInner<'a, D: DatabaseBackend> {
+struct EnvInner<D: DatabaseBackend> {
     pub(crate) db: D,
-    marker: std::marker::PhantomData<&'a ()>,
 }

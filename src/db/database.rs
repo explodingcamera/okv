@@ -10,7 +10,7 @@ use std::sync::Arc;
 /// Can be cloned but not shared across threads.
 pub struct Database<'a, K, V, D: DatabaseBackend>(Arc<DatabaseInner<'a, K, V, D>>);
 impl<'a, K, V, D: DatabaseBackend> Database<'a, K, V, D> {
-    pub(crate) fn new(env: &'a Env<'a, D>, name: &str) -> Result<Self> {
+    pub(crate) fn new(env: &'a Env<D>, name: &str) -> Result<Self> {
         let column = env.db().create_or_open(name)?;
         Ok(Database(Arc::new(DatabaseInner {
             name: name.to_string(),
@@ -31,7 +31,7 @@ where
     D: DatabaseBackend,
 {
     name: String,
-    env: &'a Env<'a, D>,
+    env: &'a Env<D>,
     column: D::Column<'a>,
     _phantom: PhantomData<(K, V)>,
 }

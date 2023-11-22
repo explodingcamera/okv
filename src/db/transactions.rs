@@ -12,7 +12,7 @@ where
     C: DBColumnTransaction<'a>,
     D: DatabaseBackend<Column<'a> = C>,
 {
-    pub(super) _env: &'a Env<'a, D>,
+    pub(super) _env: &'a Env<D>,
     pub(super) column: C::Txn,
     pub(super) _phantom: PhantomData<(K, V)>,
 }
