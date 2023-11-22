@@ -1,19 +1,18 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
-mod error;
-mod traits;
-pub use traits::*;
-
-/// Types for serialization
-pub mod types;
-
-mod backend;
 mod db;
 mod env;
-
+mod error;
+mod traits;
+/// Types for serialization
+pub mod types;
+pub use db::Database;
+pub use env::Env;
 pub use error::*;
+pub use traits::*;
 
+mod backend;
 #[cfg(feature = "memdb")]
 pub use backend::mem;
 
@@ -23,15 +22,11 @@ pub use backend::rocksdb;
 #[cfg(feature = "unstable_any")]
 pub use backend::any;
 
-pub use db::Database;
-pub use env::Env;
-
 #[cfg(test)]
 mod test {
     use std::thread;
 
     use crate::backend::mem::MemDB;
-    use crate::backend::{DatabaseColumnTxn, DatabaseCommon, DatabaseTxn};
     use crate::types::serde::SerdeJson;
     use crate::Env;
 
@@ -51,12 +46,12 @@ mod test {
         let backend = RocksDbOptimistic::new("database/rocks2")?;
 
         let env = Env::new(backend);
-        let mut db = env.open::<&str, SerdeJson<Test>>("test")?;
+        let mut db = env.open_tupel::<(&str, SerdeJson<Test>)>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
         assert_eq!(res, test);
-
         let env2 = env.clone();
+
         let handler = thread::spawn(move || {
             let test = Test {
                 name: "hello".to_string(),
@@ -72,11 +67,8 @@ mod test {
         handler.join().unwrap();
         let db = env.open::<&str, SerdeJson<Test>>("test").unwrap();
         let _res = db.get("hello")?;
-        // TODO: db.clear()?;
-
-        let internal = db.inner();
-        let tx = internal.transaction()?;
-        tx.get("test")?;
+        let tx = db.transaction()?;
+        tx.get("hello")?;
         tx.commit()?;
         db.delete_db()?;
 

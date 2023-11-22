@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::RocksDbImpl;
-use crate::{backend::DatabaseCommonRefBatch, Flushable, Innerable, Result};
+use crate::{backend::DBColumnRefBatch, Flushable, Innerable, Result};
 use inherent::inherent;
 use rocksdb::DBPinnableSlice;
 
@@ -60,7 +60,7 @@ impl RocksDbImpl for RocksDb<'_> {
     }
 }
 
-impl<'b, 'c> DatabaseCommonRefBatch<'c> for RocksDbColumn<'b>
+impl<'b, 'c> DBColumnRefBatch<'c> for RocksDbColumn<'b>
 where
     'b: 'c,
 {

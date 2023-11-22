@@ -15,14 +15,14 @@ pub mod rocksdb;
 /// Database backend trait.
 pub trait DatabaseBackend<'a>: Innerable + Sized + Send + Sync + 'a {
     /// The type of the 'column', this is a reference to a database.
-    type Column: DatabaseCommon;
+    type Column: DBColumn;
 
     /// Create or open a database.
     fn create_or_open(&'a self, db: &str) -> Result<Self::Column>;
 }
 
 /// Database column trait.
-pub trait DatabaseCommon {
+pub trait DBColumn {
     /// Set a key-value pair.
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()>;
 
@@ -42,12 +42,12 @@ pub trait DatabaseCommon {
     fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool>;
 }
 
-pub trait DatabaseCommonClear: DatabaseCommon {
+pub trait DBColumnClear: DBColumn {
     /// Clear the database.
     fn clear(&self) -> Result<()>;
 }
 
-pub trait DatabaseCommonDelete: DatabaseCommon {
+pub trait DBColumnDelete: DBColumn {
     /// Delete the database. Note that this will delete all data in the database.
     /// After calling this method, the database should not be used anymore or it
     /// will panic.
@@ -55,7 +55,7 @@ pub trait DatabaseCommonDelete: DatabaseCommon {
 }
 
 /// Database column trait that returns references.
-pub trait DatabaseCommonRef<'c>: DatabaseCommon {
+pub trait DBColumnRef<'c>: DBColumn {
     /// The type of the 'column', this is a reference to a database.
     type Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync;
 
@@ -64,7 +64,7 @@ pub trait DatabaseCommonRef<'c>: DatabaseCommon {
 }
 
 /// Database column trait that returns references in batch.
-pub trait DatabaseCommonRefBatch<'c>: DatabaseCommon {
+pub trait DBColumnRefBatch<'c>: DBColumn {
     /// The type of the 'column', this is a reference to a database.
     type Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync;
 
@@ -75,19 +75,19 @@ pub trait DatabaseCommonRefBatch<'c>: DatabaseCommon {
         I::Item: AsRef<[u8]>;
 }
 
+/// Database transaction trait that returns references.
+pub trait DBColumnTransaction<'c>: DBColumn {
+    type Txn: DBTransaction;
+
+    /// Start a transaction.
+    fn transaction(&self) -> Result<Self::Txn>;
+}
+
 /// Database transaction trait.
-pub trait DatabaseTxn: DatabaseCommon {
+pub trait DBTransaction: DBColumn {
     /// Commit the transaction.
     fn commit(self) -> Result<()>;
 
     /// Rollback the transaction.
     fn rollback(self) -> Result<()>;
-}
-
-/// Database transaction trait that returns references.
-pub trait DatabaseColumnTxn<'c>: DatabaseCommon {
-    type Txn: DatabaseTxn;
-
-    /// Start a transaction.
-    fn transaction(&self) -> Result<Self::Txn>;
 }

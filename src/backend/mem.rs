@@ -1,6 +1,6 @@
 use crate::{Error, Flushable, Result};
 
-use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonClear, Innerable};
+use super::{DBColumn, DBColumnClear, DatabaseBackend, Innerable};
 use dashmap::{try_result::TryResult, DashMap};
 
 /// An in-memory database backend.
@@ -75,7 +75,7 @@ impl<'a> Innerable for MemDBColumn<'a> {
     }
 }
 
-impl<'a> DatabaseCommonClear for MemDBColumn<'a> {
+impl<'a> DBColumnClear for MemDBColumn<'a> {
     fn clear(&self) -> super::Result<()> {
         self.column.clear();
         Ok(())
@@ -89,7 +89,7 @@ impl<'a> Flushable for MemDBColumn<'a> {
     }
 }
 
-impl<'a> DatabaseCommon for MemDBColumn<'a> {
+impl<'a> DBColumn for MemDBColumn<'a> {
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> super::Result<()> {
         self.column.insert(key.as_ref().to_vec(), val.to_vec());
         Ok(())

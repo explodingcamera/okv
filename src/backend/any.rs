@@ -1,6 +1,6 @@
 // TODO: maybe use https://crates.io/crates/enum_dispatch instead of this?
 
-use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonClear, Innerable};
+use super::{DBColumn, DBColumnClear, DatabaseBackend, Innerable};
 use crate::{rocksdb::RocksDb, Result};
 
 /// Any Database Backend
@@ -100,7 +100,7 @@ impl<'a> Innerable for AnyDatabaseColumn<'a> {
     }
 }
 
-impl<'a> DatabaseCommon for AnyDatabaseColumn<'a> {
+impl<'a> DBColumn for AnyDatabaseColumn<'a> {
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
         dispatch!(self, set, key, val)
     }
@@ -126,7 +126,7 @@ impl<'a> DatabaseCommon for AnyDatabaseColumn<'a> {
     }
 }
 
-impl<'a> DatabaseCommonClear for AnyDatabaseColumn<'a> {
+impl<'a> DBColumnClear for AnyDatabaseColumn<'a> {
     fn clear(&self) -> Result<()> {
         match self.column {
             #[cfg(feature = "memdb")]

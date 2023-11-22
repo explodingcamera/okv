@@ -37,3 +37,4 @@ serde-json=["serde", "dep:serde_json"]
 serde-rmp=["serde", "dep:rmp-serde"]
 
 unstable_any=[]
+unstable_lasydb=[]

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB};
 
 use crate::{
-    backend::{DatabaseColumnTxn, DatabaseCommon, DatabaseCommonRef, DatabaseTxn},
+    backend::{DBColumn, DBColumnRef, DBColumnTransaction, DBTransaction},
     Result,
 };
 
@@ -14,7 +14,7 @@ pub struct RocksDBTransaction<'a, DB> {
     tx: rocksdb::Transaction<'a, DB>,
 }
 
-impl<'a> DatabaseColumnTxn<'a> for RocksDbOptimisticColumn<'a> {
+impl<'a> DBColumnTransaction<'a> for RocksDbOptimisticColumn<'a> {
     type Txn = RocksDBTransaction<'a, OptimisticTransactionDB>;
 
     fn transaction(&self) -> crate::Result<Self::Txn> {
@@ -26,7 +26,7 @@ impl<'a> DatabaseColumnTxn<'a> for RocksDbOptimisticColumn<'a> {
     }
 }
 
-impl<'a> DatabaseColumnTxn<'a> for RocksDbPessimisticColumn<'a> {
+impl<'a> DBColumnTransaction<'a> for RocksDbPessimisticColumn<'a> {
     type Txn = RocksDBTransaction<'a, TransactionDB>;
 
     fn transaction(&self) -> crate::Result<Self::Txn> {
@@ -38,7 +38,7 @@ impl<'a> DatabaseColumnTxn<'a> for RocksDbPessimisticColumn<'a> {
     }
 }
 
-impl<'a, DB> DatabaseTxn for RocksDBTransaction<'a, DB> {
+impl<'a, DB> DBTransaction for RocksDBTransaction<'a, DB> {
     fn commit(self) -> crate::Result<()> {
         self.tx.commit()?;
         Ok(())
@@ -50,7 +50,7 @@ impl<'a, DB> DatabaseTxn for RocksDBTransaction<'a, DB> {
     }
 }
 
-impl<'a, DB> DatabaseCommon for RocksDBTransaction<'a, DB> {
+impl<'a, DB> DBColumn for RocksDBTransaction<'a, DB> {
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> crate::Result<()> {
         self.tx.put_cf(&self.cf_handle, key, val)?;
         Ok(())
@@ -89,7 +89,7 @@ impl<'a, DB> DatabaseCommon for RocksDBTransaction<'a, DB> {
     }
 }
 
-impl<'a, DB> DatabaseCommonRef<'a> for RocksDBTransaction<'a, DB> {
+impl<'a, DB> DBColumnRef<'a> for RocksDBTransaction<'a, DB> {
     type Ref = DBPinnableSlice<'a>;
 
     fn get_ref(&'a self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {

@@ -1,10 +1,5 @@
+use crate::{backend::DatabaseBackend, db::Database, Result};
 use std::sync::Arc;
-
-use crate::{
-    backend::DatabaseBackend,
-    db::{self, Database},
-    Result,
-};
 
 /// A database environment
 /// Can be cloned.
@@ -58,8 +53,39 @@ impl<'a, D: DatabaseBackend<'a>> Env<'a, D> {
     /// let mut db = env.open::<&str, &str>("test").unwrap();
     /// ```
     pub fn open<K, V>(&'a self, name: &str) -> Result<Database<'a, K, V, D>> {
-        db::new(self, name)
+        Database::new(self, name)
     }
+
+    /// Same as [`Env::open`] but you can specify the type of the key and value using a tuple.
+    /// This is useful when you want to reuse the same type for multiple databases.
+    pub fn open_tupel<T: DatabaseType>(
+        &'a self,
+        name: &str,
+    ) -> Result<Database<'a, T::Key, T::Val, D>> {
+        Database::new(self, name)
+    }
+
+    #[cfg(feature = "unstable_lasydb")]
+    /// Open or create a database lazily.
+    /// This is useful for sharing the same database across threads.
+    /// Alternatively, you can use [`Env::clone`] to share environments across threads and use [`Env::open`] to open the database.
+    pub fn open_lazy<K, V>(&'a self, name: &str) -> crate::db::DatabaseLazy<'a, K, V, D> {
+        crate::db::DatabaseLazy::new(self, name)
+    }
+}
+
+pub trait DatabaseType {
+    type Key;
+    type Val;
+}
+
+impl<'k, 'v, K, V> DatabaseType for (K, V)
+where
+    K: crate::traits::BytesEncode<'k>,
+    V: crate::traits::BytesEncode<'v>,
+{
+    type Key = K;
+    type Val = V;
 }
 
 struct EnvInner<'a, D: DatabaseBackend<'a>> {

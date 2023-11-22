@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+* Added support for transactions
+* Refactored Database Traits
+* Added `Env::open_tupel` method for opening a database with a tuple of types
+* Added `Env::open_lazy` method for opening a database with a lazy type (as a workaround for Database not bein Sync)
+
 ## v0.0.6 - 2023-11-22
 
 * Added `DatabaseColumnTxn` trait for transactional columns
