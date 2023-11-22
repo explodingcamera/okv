@@ -6,8 +6,9 @@
 * Added `DatabaseTxn` trait for transactions
 * Renamed `DatabaseColumn` trait to `DatabaseCommon`
 * Moved `get_multi_ref` to `DatabaseCommonRefMut` trait
-* Temoorarily removed `Database::clear` method for RocksDB backends (will be re-added in a future release)
- 
+* Added `Database::delete_db` method for deleting the underlying database
+* Removed `DatabaseCommonClear` implementation for RocksDB backends and replaced with `DatabaseCommonDelete`
+
 ## v0.0.5 - 2023-11-21
 
 * Less lifetime parameters

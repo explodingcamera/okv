@@ -47,6 +47,13 @@ pub trait DatabaseCommonClear: DatabaseCommon {
     fn clear(&self) -> Result<()>;
 }
 
+pub trait DatabaseCommonDelete: DatabaseCommon {
+    /// Delete the database. Note that this will delete all data in the database.
+    /// After calling this method, the database should not be used anymore or it
+    /// will panic.
+    fn delete_db(&self) -> Result<()>;
+}
+
 /// Database column trait that returns references.
 pub trait DatabaseCommonRef<'c>: DatabaseCommon {
     /// The type of the 'column', this is a reference to a database.

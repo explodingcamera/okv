@@ -84,6 +84,12 @@ pub trait DBCommonClear {
     fn clear(&self) -> Result<()>;
 }
 
+/// A trait that represents a common database interface can be deleted.
+pub trait DBCommonDelete {
+    /// Clear the database, removing all key-value pairs.
+    fn delete_db(self) -> Result<()>;
+}
+
 /// A trait that represents a common database interface that returns references.
 pub trait DBCommonRef<'c, Key, Val, Ref>
 where

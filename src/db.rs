@@ -4,7 +4,8 @@ use std::sync::Arc;
 use inherent::inherent;
 
 use crate::backend::{
-    DatabaseBackend, DatabaseCommon, DatabaseCommonClear, DatabaseCommonRef, DatabaseCommonRefBatch,
+    DatabaseBackend, DatabaseCommon, DatabaseCommonClear, DatabaseCommonDelete, DatabaseCommonRef,
+    DatabaseCommonRefBatch,
 };
 use crate::env::Env;
 use crate::traits::{BytesDecode, BytesDecodeOwned, BytesEncode};
@@ -160,6 +161,21 @@ where
     /// Clear the database, removing all key-value pairs.
     pub fn clear(&self) -> Result<()> {
         self.0.column.clear()?;
+        Ok(())
+    }
+}
+
+#[inherent]
+impl<'a, Key, Val, D, C> crate::DBCommonDelete for Database<'a, Key, Val, D>
+where
+    C: DatabaseCommonDelete,
+    D: DatabaseBackend<'a, Column = C>,
+{
+    /// Delete the database. Note that this will delete all data in the database.
+    /// After calling this method, the database should not be used anymore or it
+    /// will panic.
+    pub fn delete_db(self) -> Result<()> {
+        self.0.column.delete_db()?;
         Ok(())
     }
 }

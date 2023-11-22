@@ -78,6 +78,7 @@ mod test {
         let tx = internal.transaction()?;
         tx.get("test")?;
         tx.commit()?;
+        db.delete_db()?;
 
         Ok(())
     }

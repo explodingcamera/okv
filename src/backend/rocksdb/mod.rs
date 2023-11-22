@@ -1,4 +1,4 @@
-use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonRef};
+use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonDelete, DatabaseCommonRef};
 use crate::{Error, Result};
 use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 
@@ -52,17 +52,12 @@ trait RocksDbImpl: Sized {
 
 macro_rules! implement_column {
     ($name:ident) => {
-        // impl<'a> DatabaseCommonClear for $name<'a> {
-        //     fn clear(&self) -> Result<()> {
-        //         unimplemented!("TODO: implement clear for rocksdb (might require a mutable reference to the database)");
-
-        //         // self._env.db.drop_cf(&self._name)?;
-        //         // self._env
-        //         //     .db
-        //         //     .create_cf(&self._name, &rocksdb::Options::default())?;
-        //         // Ok(())
-        //     }
-        // }
+        impl<'a> DatabaseCommonDelete for $name<'a> {
+            fn delete_db(&self) -> Result<()> {
+                self._env.db.drop_cf(&self._name)?;
+                Ok(())
+            }
+        }
 
         impl<'b, 'c> DatabaseCommonRef<'c> for $name<'b>
         where

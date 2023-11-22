@@ -41,7 +41,9 @@ fn main() -> Result<()> {
     let env = Env::new(storage);
 
     // Open a database with specified serializers
-    let mut db = env.open::<&str, SerdeJson<Test>>("my_database")?; // or SerdeRmp
+    let mut db = env.open::<&str, SerdeJson<Test>>("my_database")?;
+//  let mut db = env.open::<&str, SerdeRmp<Test>>("my_database")?;
+//  let mut db = env.open::<&str, &[u8]>("my_database")?;
 
     // Working with data
     let test = Test { name: "John".to_string(), age: 32 };
