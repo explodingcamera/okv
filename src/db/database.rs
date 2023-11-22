@@ -14,7 +14,6 @@ impl<'a, K, V, D: DatabaseBackend> Database<'a, K, V, D> {
         let column = env.db().create_or_open(name)?;
         Ok(Database(Arc::new(DatabaseInner {
             name: name.to_string(),
-            env,
             column,
             _phantom: PhantomData,
         })))
@@ -28,10 +27,9 @@ impl<'a, K, V, D: DatabaseBackend> Database<'a, K, V, D> {
 
 struct DatabaseInner<'a, K, V, D>
 where
-    D: DatabaseBackend,
+    D: DatabaseBackend + 'a,
 {
     name: String,
-    env: &'a Env<D>,
     column: D::Column<'a>,
     _phantom: PhantomData<(K, V)>,
 }
@@ -49,7 +47,7 @@ where
     }
 
     /// Set a `key` to a value in the database.
-    pub fn set_raw<'v>(&'v mut self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()> {
+    pub fn set_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()> {
         self.0.column.set(key, val)?;
         Ok(())
     }
@@ -61,13 +59,13 @@ where
         Val: BytesDecodeOwned;
 
     /// Set a `key` to the serialized `val` in the database.
-    pub fn set<'k, 'v>(&'v mut self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
+    pub fn set<'k, 'v>(&'v self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>;
 
     /// Delete the serialized `val` from the database by `key`.
-    pub fn delete<'k>(&mut self, key: &'k <Key>::EItem) -> Result<()>
+    pub fn delete<'k>(&self, key: &'k <Key>::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
     {
@@ -111,7 +109,7 @@ where
 impl<'a, Key, Val, D, C> crate::DBCommonClear for Database<'a, Key, Val, D>
 where
     C: DBColumnClear,
-    D: DatabaseBackend<Column<'a> = C>,
+    D: DatabaseBackend<Column<'a> = C> + 'a,
 {
     /// Clear the database, removing all key-value pairs.
     pub fn clear(&self) -> Result<()> {
@@ -124,7 +122,7 @@ where
 impl<'a, Key, Val, D, C> crate::DBCommonDelete for Database<'a, Key, Val, D>
 where
     C: DBColumnDelete,
-    D: DatabaseBackend<Column<'a> = C>,
+    D: DatabaseBackend<Column<'a> = C> + 'a,
 {
     /// Delete the database. Note that this will delete all data in the database.
     /// After calling this method, the database should not be used anymore or it
@@ -205,10 +203,9 @@ where
     D: DatabaseBackend<Column<'a> = C>,
 {
     /// Clear the database, removing all key-value pairs.
-    pub fn transaction(&self) -> Result<DatabaseTransaction<'a, Key, Val, D, C>> {
+    pub fn transaction(&self) -> Result<DatabaseTransaction<'a, Key, Val, C>> {
         Ok(DatabaseTransaction {
             column: self.0.column.transaction()?,
-            _env: self.0.env,
             _phantom: PhantomData,
         })
     }

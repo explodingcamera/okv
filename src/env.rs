@@ -5,7 +5,7 @@ use std::sync::Arc;
 /// Can be cloned.
 pub struct Env<D: DatabaseBackend>(Arc<EnvInner<D>>);
 
-impl<'a, D> Clone for Env<D>
+impl<D> Clone for Env<D>
 where
     D: DatabaseBackend,
 {
@@ -67,8 +67,8 @@ impl<'a, D: DatabaseBackend> Env<D> {
     /// Open or create a database lazily.
     /// This is useful for sharing the same database across threads.
     /// Alternatively, you can use [`Env::clone`] to share environments across threads and use [`Env::open`] to open the database.
-    pub fn open_lazy<K, V>(&'a self, name: &str) -> crate::db::DatabaseLazy<'a, K, V, D> {
-        crate::db::DatabaseLazy::new(self, name)
+    pub fn open_lazy<K, V>(&'a self, name: &str) -> crate::db::DatabaseLazy<K, V, D> {
+        crate::db::DatabaseLazy::new(self.clone(), name)
     }
 }
 

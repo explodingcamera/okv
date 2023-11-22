@@ -3,24 +3,21 @@ use std::marker::PhantomData;
 use inherent::inherent;
 
 use crate::{
-    backend::{DBColumn, DBColumnTransaction, DBTransaction, DatabaseBackend},
-    BytesDecodeOwned, BytesEncode, Env, Result,
+    backend::{DBColumn, DBColumnTransaction, DBTransaction},
+    BytesDecodeOwned, BytesEncode, Result,
 };
 
-pub struct DatabaseTransaction<'a, K, V, D, C>
+pub struct DatabaseTransaction<'a, K, V, C>
 where
     C: DBColumnTransaction<'a>,
-    D: DatabaseBackend<Column<'a> = C>,
 {
-    pub(super) _env: &'a Env<D>,
     pub(super) column: C::Txn,
     pub(super) _phantom: PhantomData<(K, V)>,
 }
 
-impl<'a, K, V, D, C> DatabaseTransaction<'a, K, V, D, C>
+impl<'a, K, V, C> DatabaseTransaction<'a, K, V, C>
 where
     C: DBColumnTransaction<'a>,
-    D: DatabaseBackend<Column<'a> = C>,
 {
     /// Commit the transaction.
     pub fn commit(self) -> Result<()> {
@@ -34,11 +31,9 @@ where
 }
 
 #[inherent]
-impl<'a, Key, Val, D, C> crate::traits::DBCommon<Key, Val>
-    for DatabaseTransaction<'a, Key, Val, D, C>
+impl<'a, Key, Val, C> crate::traits::DBCommon<Key, Val> for DatabaseTransaction<'a, Key, Val, C>
 where
     C: DBColumnTransaction<'a>,
-    D: DatabaseBackend<Column<'a> = C>,
 {
     /// Get the value from the database by `key`.
     pub fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
@@ -47,7 +42,7 @@ where
     }
 
     /// Set a `key` to a value in the database.
-    pub fn set_raw<'v>(&'v mut self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()> {
+    pub fn set_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()> {
         self.column.set(key, val)?;
         Ok(())
     }
@@ -59,13 +54,13 @@ where
         Val: BytesDecodeOwned;
 
     /// Set a `key` to the serialized `val` in the database.
-    pub fn set<'k, 'v>(&'v mut self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
+    pub fn set<'k, 'v>(&'v self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>;
 
     /// Delete the serialized `val` from the database by `key`.
-    pub fn delete<'k>(&mut self, key: &'k <Key>::EItem) -> Result<()>
+    pub fn delete<'k>(&self, key: &'k <Key>::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
     {

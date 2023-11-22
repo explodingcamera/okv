@@ -49,10 +49,10 @@ pub trait BytesDecodeOwned {
 /// A trait that represents a common database interface.
 pub trait DBCommon<Key, Val> {
     /// Set a key to a value in the database.
-    fn set_raw<'v>(&'v mut self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()>;
+    fn set_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()>;
 
     /// Set a `key` to the serialized `val` in the database.
-    fn set<'k, 'v>(&'v mut self, key: &'k Key::EItem, val: &'v Val::EItem) -> Result<()>
+    fn set<'k, 'v>(&'v self, key: &'k Key::EItem, val: &'v Val::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>,
@@ -115,7 +115,7 @@ pub trait DBCommon<Key, Val> {
     }
 
     /// Delete the serialized `val` from the database by `key`.
-    fn delete<'k>(&mut self, key: &'k Key::EItem) -> Result<()>
+    fn delete<'k>(&self, key: &'k Key::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>;
 
