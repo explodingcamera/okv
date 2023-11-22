@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::{Error, Flushable, Result};
 
 use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonClear, Innerable};
 use dashmap::{try_result::TryResult, DashMap};
@@ -78,6 +78,13 @@ impl<'a> Innerable for MemDBColumn<'a> {
 impl<'a> DatabaseCommonClear for MemDBColumn<'a> {
     fn clear(&self) -> super::Result<()> {
         self.column.clear();
+        Ok(())
+    }
+}
+
+impl<'a> Flushable for MemDBColumn<'a> {
+    /// No-op.
+    fn flush(&self) -> super::Result<()> {
         Ok(())
     }
 }

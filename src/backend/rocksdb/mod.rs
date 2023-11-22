@@ -1,4 +1,4 @@
-use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonClear, DatabaseCommonRef};
+use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonRef};
 use crate::{Error, Result};
 use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 

@@ -31,7 +31,7 @@ mod test {
     use std::thread;
 
     use crate::backend::mem::MemDB;
-    use crate::backend::DatabaseColumnTxn;
+    use crate::backend::{DatabaseColumnTxn, DatabaseCommon, DatabaseTxn};
     use crate::types::serde::SerdeJson;
     use crate::Env;
 
@@ -76,6 +76,9 @@ mod test {
 
         let internal = db.inner();
         let tx = internal.transaction()?;
+        tx.get("test")?;
+        tx.commit()?;
+
         Ok(())
     }
 
@@ -114,6 +117,7 @@ mod test {
         db.flush()?;
 
         let _ = db.inner();
+
         Ok(())
     }
 

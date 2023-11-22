@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use super::RocksDbImpl;
-use crate::{
-    backend::{DatabaseCommonRef, DatabaseCommonRefBatch},
-    Flushable, Innerable, Result,
-};
+use crate::{backend::DatabaseCommonRefBatch, Flushable, Innerable, Result};
 use inherent::inherent;
 use rocksdb::DBPinnableSlice;
 
