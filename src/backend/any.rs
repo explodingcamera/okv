@@ -66,10 +66,10 @@ impl<'a> Innerable for AnyDatabase<'a> {
     }
 }
 
-impl<'a> DatabaseBackend<'a> for AnyDatabase<'a> {
-    type Column = AnyDatabaseColumn<'a>;
+impl<'a> DatabaseBackend for AnyDatabase<'a> {
+    type Column<'c> = AnyDatabaseColumn<'c> where Self: 'c;
 
-    fn create_or_open(&'a self, name: &str) -> Result<Self::Column> {
+    fn create_or_open<'c>(&'c self, name: &str) -> Result<Self::Column<'c>> {
         let res = match self.backend {
             #[cfg(feature = "memdb")]
             AnyDatabaseBackend::MemDB(ref db) => {

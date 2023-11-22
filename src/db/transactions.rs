@@ -10,7 +10,7 @@ use crate::{
 pub struct DatabaseTransaction<'a, K, V, D, C>
 where
     C: DBColumnTransaction<'a>,
-    D: DatabaseBackend<'a, Column = C>,
+    D: DatabaseBackend<Column<'a> = C>,
 {
     pub(super) _env: &'a Env<'a, D>,
     pub(super) column: C::Txn,
@@ -20,7 +20,7 @@ where
 impl<'a, K, V, D, C> DatabaseTransaction<'a, K, V, D, C>
 where
     C: DBColumnTransaction<'a>,
-    D: DatabaseBackend<'a, Column = C>,
+    D: DatabaseBackend<Column<'a> = C>,
 {
     /// Commit the transaction.
     pub fn commit(self) -> Result<()> {
@@ -38,7 +38,7 @@ impl<'a, Key, Val, D, C> crate::traits::DBCommon<Key, Val>
     for DatabaseTransaction<'a, Key, Val, D, C>
 where
     C: DBColumnTransaction<'a>,
-    D: DatabaseBackend<'a, Column = C>,
+    D: DatabaseBackend<Column<'a> = C>,
 {
     /// Get the value from the database by `key`.
     pub fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {

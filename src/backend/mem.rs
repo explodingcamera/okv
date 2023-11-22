@@ -35,10 +35,10 @@ impl<'a> Innerable for MemDB<'a> {
     }
 }
 
-impl<'a> DatabaseBackend<'a> for MemDB<'a> {
-    type Column = MemDBColumn<'a>;
+impl<'a> DatabaseBackend for MemDB<'a> {
+    type Column<'c> = MemDBColumn<'c> where Self: 'c;
 
-    fn create_or_open(&'a self, name: &str) -> super::Result<Self::Column> {
+    fn create_or_open<'c>(&'c self, name: &str) -> super::Result<Self::Column<'c>> {
         let col = match self.columns.try_get(name) {
             TryResult::Absent => {
                 let col = DashMap::new();

@@ -13,12 +13,14 @@ pub mod mem;
 pub mod rocksdb;
 
 /// Database backend trait.
-pub trait DatabaseBackend<'a>: Innerable + Sized + Send + Sync + 'a {
+pub trait DatabaseBackend: Innerable + Sized + Send + Sync {
     /// The type of the 'column', this is a reference to a database.
-    type Column: DBColumn;
+    type Column<'c>: DBColumn
+    where
+        Self: 'c;
 
     /// Create or open a database.
-    fn create_or_open(&'a self, db: &str) -> Result<Self::Column>;
+    fn create_or_open<'c>(&'c self, db: &str) -> Result<Self::Column<'c>>;
 }
 
 /// Database column trait.

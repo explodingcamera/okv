@@ -133,9 +133,9 @@ macro_rules! implement_column {
 
 macro_rules! implement_backend {
     ($name:ident, $col:ident, $db:ident) => {
-        impl<'a> DatabaseBackend<'a> for $name {
-            type Column = $col<'a>;
-            fn create_or_open(&'a self, name: &str) -> super::Result<Self::Column> {
+        impl DatabaseBackend for $name {
+            type Column<'c> = $col<'c> where Self: 'c;
+            fn create_or_open<'c>(&'c self, name: &str) -> super::Result<Self::Column<'c>> {
                 if let Some(handle) = self.db.cf_handle(name) {
                     return Ok($col::new(name.to_owned(), self, handle));
                 };
