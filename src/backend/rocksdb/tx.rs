@@ -51,7 +51,7 @@ impl<'a, DB> DBTransaction for RocksDBTransaction<'a, DB> {
 }
 
 impl<'a, DB> DBColumn for RocksDBTransaction<'a, DB> {
-    fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> crate::Result<()> {
+    fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> crate::Result<()> {
         self.tx.put_cf(&self.cf_handle, key, val)?;
         Ok(())
     }

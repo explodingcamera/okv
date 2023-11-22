@@ -91,7 +91,7 @@ macro_rules! implement_column {
         }
 
         impl<'a> DBColumn for $name<'a> {
-            fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
+            fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
                 self.env.db.put_cf(self.inner(), key, val)?;
                 Ok(())
             }

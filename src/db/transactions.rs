@@ -40,36 +40,29 @@ where
     C: DBColumnTransaction<'a>,
     D: DatabaseBackend<'a, Column = C>,
 {
+    /// Get the value from the database by `key`.
+    pub fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
+        let res = self.column.get(key)?;
+        Ok(res)
+    }
+
+    /// Set a `key` to a value in the database.
+    pub fn set_raw<'v>(&'v mut self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()> {
+        self.column.set(key, val)?;
+        Ok(())
+    }
+
     /// Get the serialized `val` from the database by `key`.
     pub fn get<'k, 'v>(&self, key: &'k <Key>::EItem) -> Result<<Val>::DItem>
     where
         Key: BytesEncode<'k>,
-        Val: BytesDecodeOwned,
-    {
-        let key_bytes = Key::bytes_encode(key)?;
-
-        let val_bytes =
-            self.column
-                .get(key_bytes.clone())?
-                .ok_or_else(|| crate::Error::KeyNotFound {
-                    key: key_bytes.to_vec(),
-                })?;
-
-        let res = Val::bytes_decode_owned(&val_bytes)?;
-        Ok(res)
-    }
+        Val: BytesDecodeOwned;
 
     /// Set a `key` to the serialized `val` in the database.
     pub fn set<'k, 'v>(&'v mut self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
-        Val: BytesEncode<'v>,
-    {
-        let key_bytes = Key::bytes_encode(key)?;
-        let val_bytes = Val::bytes_encode(val)?;
-        self.column.set(key_bytes, &val_bytes)?;
-        Ok(())
-    }
+        Val: BytesEncode<'v>;
 
     /// Delete the serialized `val` from the database by `key`.
     pub fn delete<'k>(&mut self, key: &'k <Key>::EItem) -> Result<()>
@@ -81,24 +74,20 @@ where
         Ok(())
     }
 
-    /// Get the serialized `val` from the database by `keys`.
-    pub fn get_multi<'k, I>(&self, keys: I) -> Result<Vec<Option<<Val>::DItem>>>
+    /// Get the serialized `val` from the database by `key`.
+    pub fn get_multi<'k, I>(&self, keys: I) -> Result<Vec<Option<Val::DItem>>>
     where
         Key: BytesEncode<'k>,
-        I: IntoIterator<Item = &'k <Key>::EItem>,
-        Val: BytesDecodeOwned,
+        I: IntoIterator<Item = &'k Key::EItem>,
+        Val: BytesDecodeOwned;
+
+    /// Get the `val` from the database by `key`.
+    pub fn get_multi_raw<I, IV: AsRef<[u8]>>(&self, keys: I) -> Result<Vec<Option<Vec<u8>>>>
+    where
+        I: IntoIterator<Item = IV>,
     {
-        let mut res = Vec::new();
-        for key in keys {
-            let key_bytes = Key::bytes_encode(key)?;
-            let val_bytes = self.column.get(key_bytes)?;
-            let val = match val_bytes {
-                Some(val_bytes) => Some(Val::bytes_decode_owned(&val_bytes)?),
-                None => None,
-            };
-            res.push(val);
-        }
-        Ok(res)
+        let val_bytes = self.column.get_multi(keys)?;
+        Ok(val_bytes)
     }
 
     /// Check if the database contains the given key.

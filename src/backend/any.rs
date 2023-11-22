@@ -101,7 +101,7 @@ impl<'a> Innerable for AnyDatabaseColumn<'a> {
 }
 
 impl<'a> DBColumn for AnyDatabaseColumn<'a> {
-    fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
+    fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
         dispatch!(self, set, key, val)
     }
 

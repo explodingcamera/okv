@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+* Add `_raw` methods to `Database` for raw access to the underlying database
+* Added `uuid` feature for `Uuid` support
+* Properly implement `get_multi` (was previously just a loop over `get`)
+
 ## v0.0.7 - 2023-11-22
 
 * Added support for transactions

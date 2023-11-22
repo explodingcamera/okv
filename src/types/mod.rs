@@ -11,6 +11,10 @@ pub mod primitive;
 /// Serialization for serde types (requires `serde` feature)
 pub mod serde;
 
+#[cfg(feature = "uuid")]
+/// Serialization for cuid2 types (requires `cuid2` feature)
+pub mod uuid;
+
 /// A reference to a value in the database.
 /// Allows for more efficient access to the underlying bytes by returning a reference.
 /// To deserialize the value, use [`crate::types::RefValue::deserialize()`].

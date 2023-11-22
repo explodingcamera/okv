@@ -24,7 +24,7 @@ pub trait DatabaseBackend<'a>: Innerable + Sized + Send + Sync + 'a {
 /// Database column trait.
 pub trait DBColumn {
     /// Set a key-value pair.
-    fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()>;
+    fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()>;
 
     /// Get a value by key.
     fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>>;

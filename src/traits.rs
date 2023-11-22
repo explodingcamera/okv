@@ -48,24 +48,71 @@ pub trait BytesDecodeOwned {
 
 /// A trait that represents a common database interface.
 pub trait DBCommon<Key, Val> {
+    /// Set a key to a value in the database.
+    fn set_raw<'v>(&'v mut self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()>;
+
     /// Set a `key` to the serialized `val` in the database.
     fn set<'k, 'v>(&'v mut self, key: &'k Key::EItem, val: &'v Val::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
-        Val: BytesEncode<'v>;
+        Val: BytesEncode<'v>,
+    {
+        let key_bytes = Key::bytes_encode(key)?;
+        let val_bytes = Val::bytes_encode(val)?;
+        self.set_raw(key_bytes.as_ref(), val_bytes.as_ref())?;
+        Ok(())
+    }
+
+    /// Set a `key` to a value in the database.
+    fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>>;
 
     /// Get the serialized `val` from the database by `key`.
     fn get<'k, 'v>(&self, key: &'k Key::EItem) -> Result<Val::DItem>
     where
         Key: BytesEncode<'k>,
-        Val: BytesDecodeOwned;
+        Val: BytesDecodeOwned,
+    {
+        let key_bytes = Key::bytes_encode(key)?;
+
+        let val_bytes = self
+            .get_raw(&key_bytes)?
+            .ok_or_else(|| crate::Error::KeyNotFound {
+                key: key_bytes.to_vec(),
+            })?;
+
+        let res = Val::bytes_decode_owned(&val_bytes)?;
+        Ok(res)
+    }
+
+    /// Get values from the database by `keys`.
+    fn get_multi_raw<I, IV: AsRef<[u8]>>(&self, keys: I) -> Result<Vec<Option<Vec<u8>>>>
+    where
+        I: IntoIterator<Item = IV>;
 
     /// Get the serialized `val` from the database by `key`.
     fn get_multi<'k, I>(&self, keys: I) -> Result<Vec<Option<Val::DItem>>>
     where
         Key: BytesEncode<'k>,
         I: IntoIterator<Item = &'k Key::EItem>,
-        Val: BytesDecodeOwned;
+        Val: BytesDecodeOwned,
+    {
+        let mut encoded_keys: Vec<Vec<u8>> = vec![];
+        for key in keys {
+            let key_bytes = Key::bytes_encode(key)?;
+            encoded_keys.push(key_bytes.to_vec());
+        }
+
+        let res = self.get_multi_raw(encoded_keys)?;
+        let res = res
+            .iter()
+            .map(|item| match item {
+                Some(val_bytes) => Ok(Some(Val::bytes_decode_owned(val_bytes)?)),
+                None => Ok(None),
+            })
+            .collect::<Result<Vec<Option<Val::DItem>>>>()?;
+
+        Ok(res)
+    }
 
     /// Delete the serialized `val` from the database by `key`.
     fn delete<'k>(&mut self, key: &'k Key::EItem) -> Result<()>

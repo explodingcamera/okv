@@ -78,6 +78,11 @@ pub enum DecodeError {
     #[cfg(feature = "serde-rmp")]
     #[error("Serde RMP error: {0}")]
     SerdeRmp(#[from] rmp_serde::decode::Error),
+
+    /// [`uuid::Error`]
+    #[cfg(feature = "uuid")]
+    #[error("UUID error: {0}")]
+    Uuid(#[from] uuid::Error),
 }
 
 /// An error that can occur when encoding a value.

@@ -90,8 +90,9 @@ impl<'a> Flushable for MemDBColumn<'a> {
 }
 
 impl<'a> DBColumn for MemDBColumn<'a> {
-    fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> super::Result<()> {
-        self.column.insert(key.as_ref().to_vec(), val.to_vec());
+    fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> super::Result<()> {
+        self.column
+            .insert(key.as_ref().to_vec(), val.as_ref().to_vec());
         Ok(())
     }
 
