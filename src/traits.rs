@@ -72,13 +72,16 @@ pub trait DBCommon<Key, Val> {
     where
         Key: BytesEncode<'k>;
 
-    /// Clear the database, removing all key-value pairs.
-    fn clear(&mut self) -> Result<()>;
-
     /// Check if the database contains the given key.
     fn contains<'k>(&self, key: &'k Key::EItem) -> Result<bool>
     where
         Key: BytesEncode<'k>;
+}
+
+/// A trait that represents a common database interface can be cleared.
+pub trait DBCommonClear {
+    /// Clear the database, removing all key-value pairs.
+    fn clear(&self) -> Result<()>;
 }
 
 /// A trait that represents a common database interface that returns references.
@@ -89,11 +92,17 @@ where
     /// Get the serialized `val` from the database by `key`.
     /// Prefer this method over `get` if you only need a reference to the value
     /// and your backend supports it.
-    fn get_ref<'k, 'v>(&'v self, key: &'k Key::EItem) -> Result<RefValue<Ref, Val::DItem>>
+    fn get_ref<'k>(&'c self, key: &'k Key::EItem) -> Result<RefValue<Ref, Val::DItem>>
     where
         Key: BytesEncode<'k>,
         Val: BytesDecode<'c>;
+}
 
+/// A trait that represents a common database interface that returns references.
+pub trait DBCommonRefBatch<'c, Key, Val, Ref>
+where
+    Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync,
+{
     /// Get the serialized `val` from the database by `key`.
     /// Prefer this method over `get_multi` if you only need a reference to the value
     /// and your backend supports it.

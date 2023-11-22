@@ -1,10 +1,13 @@
-use super::{DatabaseBackend, DatabaseColumn};
+use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonClear, DatabaseCommonRef};
 use crate::{Error, Result};
-use rocksdb::{OptimisticTransactionDB, TransactionDB, DB};
+use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 
 mod normal;
 mod optimistic;
 mod pessimistic;
+
+mod tx;
+
 pub use normal::*;
 pub use optimistic::*;
 pub use pessimistic::*;
@@ -49,7 +52,34 @@ trait RocksDbImpl: Sized {
 
 macro_rules! implement_column {
     ($name:ident) => {
-        impl<'a> DatabaseColumn for $name<'a> {
+        // impl<'a> DatabaseCommonClear for $name<'a> {
+        //     fn clear(&self) -> Result<()> {
+        //         unimplemented!("TODO: implement clear for rocksdb (might require a mutable reference to the database)");
+
+        //         // self._env.db.drop_cf(&self._name)?;
+        //         // self._env
+        //         //     .db
+        //         //     .create_cf(&self._name, &rocksdb::Options::default())?;
+        //         // Ok(())
+        //     }
+        // }
+
+        impl<'b, 'c> DatabaseCommonRef<'c> for $name<'b>
+        where
+            'b: 'c,
+        {
+            type Ref = DBPinnableSlice<'c>;
+
+            fn get_ref(&self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
+                let x = self._env.db.get_pinned_cf(&self.cf_handle, key)?;
+                let Some(x) = x else {
+                    return Ok(None);
+                };
+                Ok(Some(x))
+            }
+        }
+
+        impl<'a> DatabaseCommon for $name<'a> {
             fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
                 self._env.db.put_cf(&self.cf_handle, key, val)?;
                 Ok(())
@@ -71,15 +101,6 @@ macro_rules! implement_column {
 
             fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
                 self._env.db.delete_cf(&self.cf_handle, key)?;
-                Ok(())
-            }
-
-            fn clear(&self) -> Result<()> {
-                self._env.db.drop_cf(&self._name)?;
-                self._env
-                    .db
-                    .create_cf(&self._name, &rocksdb::Options::default())?;
-
                 Ok(())
             }
 

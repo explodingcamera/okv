@@ -1,15 +1,19 @@
 // TODO: maybe use https://crates.io/crates/enum_dispatch instead of this?
 
-use super::{DatabaseBackend, DatabaseColumn, Innerable};
-use crate::Result;
+use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonClear, Innerable};
+use crate::{rocksdb::RocksDb, Result};
 
+/// Any Database Backend
 pub enum AnyDatabaseBackend<'c> {
     #[cfg(feature = "memdb")]
+    /// See [`MemDB`](super::mem::MemDB)
     MemDB(super::mem::MemDB<'c>),
     #[cfg(feature = "rocksdb")]
+    /// See [`RocksDb`](super::rocksdb::RocksDb)
     RocksDB(super::rocksdb::RocksDb<'c>),
 }
 
+/// Any Database Column
 pub enum AnyDatabaseBackendColumn<'c> {
     #[cfg(feature = "memdb")]
     MemDB(super::mem::MemDBColumn<'c>),
@@ -36,12 +40,17 @@ macro_rules! dispatch {
     };
 }
 
+/// Convenience wrapper for any database backend.
+/// This can useful for testing and prototyping.
+/// Not recommended for production use.
+/// (Requires `unstable_any` feature)
 pub struct AnyDatabase<'c> {
     marker: std::marker::PhantomData<&'c ()>,
     backend: AnyDatabaseBackend<'c>,
 }
 
 impl<'c> AnyDatabase<'c> {
+    /// Create a new AnyDatabase wrapper.
     pub fn new(backend: AnyDatabaseBackend<'c>) -> Self {
         Self {
             marker: std::marker::PhantomData,
@@ -91,7 +100,7 @@ impl<'a> Innerable for AnyDatabaseColumn<'a> {
     }
 }
 
-impl<'a> DatabaseColumn for AnyDatabaseColumn<'a> {
+impl<'a> DatabaseCommon for AnyDatabaseColumn<'a> {
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
         dispatch!(self, set, key, val)
     }
@@ -115,8 +124,15 @@ impl<'a> DatabaseColumn for AnyDatabaseColumn<'a> {
     fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
         dispatch!(self, delete, key)
     }
+}
 
+impl<'a> DatabaseCommonClear for AnyDatabaseColumn<'a> {
     fn clear(&self) -> Result<()> {
-        dispatch!(self, clear)
+        match self.column {
+            #[cfg(feature = "memdb")]
+            AnyDatabaseBackendColumn::MemDB(ref col) => col.clear(),
+            #[cfg(feature = "rocksdb")]
+            AnyDatabaseBackendColumn::RocksDB(_) => unimplemented!("TODO: implement clear for rocksdb (might require a mutable reference to the database)"),
+        }
     }
 }

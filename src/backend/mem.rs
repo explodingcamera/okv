@@ -1,6 +1,6 @@
 use crate::{Error, Result};
 
-use super::{DatabaseBackend, DatabaseColumn, Innerable};
+use super::{DatabaseBackend, DatabaseCommon, DatabaseCommonClear, Innerable};
 use dashmap::{try_result::TryResult, DashMap};
 
 /// An in-memory database backend.
@@ -75,7 +75,14 @@ impl<'a> Innerable for MemDBColumn<'a> {
     }
 }
 
-impl<'a> DatabaseColumn for MemDBColumn<'a> {
+impl<'a> DatabaseCommonClear for MemDBColumn<'a> {
+    fn clear(&self) -> super::Result<()> {
+        self.column.clear();
+        Ok(())
+    }
+}
+
+impl<'a> DatabaseCommon for MemDBColumn<'a> {
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> super::Result<()> {
         self.column.insert(key.as_ref().to_vec(), val.to_vec());
         Ok(())
@@ -98,11 +105,6 @@ impl<'a> DatabaseColumn for MemDBColumn<'a> {
             res.push(self.get(key)?);
         }
         Ok(res)
-    }
-
-    fn clear(&self) -> Result<()> {
-        self.column.clear();
-        Ok(())
     }
 
     fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool> {

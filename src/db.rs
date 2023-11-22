@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use inherent::inherent;
 
-use crate::backend::{DatabaseBackend, DatabaseColumn, DatabaseColumnRef};
+use crate::backend::{
+    DatabaseBackend, DatabaseCommon, DatabaseCommonClear, DatabaseCommonRef, DatabaseCommonRefBatch,
+};
 use crate::env::Env;
 use crate::traits::{BytesDecode, BytesDecodeOwned, BytesEncode};
 use crate::types::RefValue;
@@ -26,19 +28,19 @@ where
 
 impl<'a, K, V, D, C> Database<'a, K, V, D>
 where
-    C: DatabaseColumn + 'a + Innerable,
+    C: DatabaseCommon + 'a + Innerable,
     D: DatabaseBackend<'a, Column = C> + Innerable,
 {
     /// Returns a reference to the underlying column.
     /// Can be used to access the database directly.
-    pub fn inner(&self) -> &<C as Innerable>::Inner {
-        self.0.column.inner()
+    pub fn inner(&self) -> &C {
+        &self.0.column
     }
 }
 
 impl<'a, K, V, D, C> Database<'a, K, V, D>
 where
-    C: DatabaseColumn + Flushable,
+    C: DatabaseCommon + Flushable,
     D: DatabaseBackend<'a, Column = C>,
 {
     /// Returns a reference to the underlying column.
@@ -138,12 +140,6 @@ where
         Ok(res)
     }
 
-    /// Clear the database, removing all key-value pairs.
-    pub fn clear(&mut self) -> Result<()> {
-        self.0.column.clear()?;
-        Ok(())
-    }
-
     /// Check if the database contains the given key.
     pub fn contains<'k>(&self, key: &'k <Key>::EItem) -> Result<bool>
     where
@@ -156,15 +152,28 @@ where
 }
 
 #[inherent]
+impl<'a, Key, Val, D, C> crate::DBCommonClear for Database<'a, Key, Val, D>
+where
+    C: DatabaseCommonClear,
+    D: DatabaseBackend<'a, Column = C>,
+{
+    /// Clear the database, removing all key-value pairs.
+    pub fn clear(&self) -> Result<()> {
+        self.0.column.clear()?;
+        Ok(())
+    }
+}
+
+#[inherent]
 impl<'a, Key, Val, D, C> crate::DBCommonRef<'a, Key, Val, C::Ref> for Database<'a, Key, Val, D>
 where
-    C: DatabaseColumnRef<'a>,
+    C: DatabaseCommonRef<'a> + 'a,
     D: DatabaseBackend<'a, Column = C>,
 {
     /// Get the serialized `val` from the database by `key`.
     ///
     /// See [`get_ref`](crate::DBCommonRef::get_ref) for more information.
-    pub fn get_ref<'v, 'k>(&'v self, key: &'k Key::EItem) -> Result<RefValue<C::Ref, Val::DItem>>
+    pub fn get_ref<'k>(&'a self, key: &'k Key::EItem) -> Result<RefValue<C::Ref, Val::DItem>>
     where
         Key: BytesEncode<'k>,
         Val: BytesDecode<'a>,
@@ -184,7 +193,14 @@ where
             marker: PhantomData,
         })
     }
+}
 
+#[inherent]
+impl<'a, Key, Val, D, C> crate::DBCommonRefBatch<'a, Key, Val, C::Ref> for Database<'a, Key, Val, D>
+where
+    C: DatabaseCommonRefBatch<'a>,
+    D: DatabaseBackend<'a, Column = C>,
+{
     /// Get the serialized `val` from the database by `key`.
     ///
     /// See [`get_multi_ref`](crate::DBCommonRef::get_multi_ref) for more information.

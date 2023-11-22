@@ -20,6 +20,9 @@ pub use backend::mem;
 #[cfg(feature = "rocksdb")]
 pub use backend::rocksdb;
 
+#[cfg(feature = "unstable_any")]
+pub use backend::any;
+
 pub use db::Database;
 pub use env::Env;
 
@@ -28,6 +31,7 @@ mod test {
     use std::thread;
 
     use crate::backend::mem::MemDB;
+    use crate::backend::DatabaseColumnTxn;
     use crate::types::serde::SerdeJson;
     use crate::Env;
 
@@ -35,6 +39,44 @@ mod test {
     struct Test {
         name: String,
         age: u32,
+    }
+    #[test]
+    fn rocksdbtx() -> crate::Result<()> {
+        let test = Test {
+            name: "hello".to_string(),
+            age: 10,
+        };
+
+        use crate::backend::rocksdb::RocksDbOptimistic;
+        let backend = RocksDbOptimistic::new("database/rocks2")?;
+
+        let env = Env::new(backend);
+        let mut db = env.open::<&str, SerdeJson<Test>>("test")?;
+        db.set("hello", &test)?;
+        let res = db.get("hello")?;
+        assert_eq!(res, test);
+
+        let env2 = env.clone();
+        let handler = thread::spawn(move || {
+            let test = Test {
+                name: "hello".to_string(),
+                age: 10,
+            };
+            let db = env2.open::<&str, SerdeJson<Test>>("test").unwrap();
+            let mut db2 = db.clone();
+            db2.set("hello", &test).unwrap();
+            let res = db.get("hello").unwrap();
+            assert_eq!(res, test);
+        });
+
+        handler.join().unwrap();
+        let db = env.open::<&str, SerdeJson<Test>>("test").unwrap();
+        let _res = db.get("hello")?;
+        // TODO: db.clear()?;
+
+        let internal = db.inner();
+        let tx = internal.transaction()?;
+        Ok(())
     }
 
     #[test]
@@ -69,6 +111,9 @@ mod test {
         handler.join().unwrap();
         let db = env.open::<&str, SerdeJson<Test>>("test").unwrap();
         let _res = db.get("hello")?;
+        db.flush()?;
+
+        let _ = db.inner();
         Ok(())
     }
 

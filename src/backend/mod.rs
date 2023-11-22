@@ -12,39 +12,75 @@ pub mod mem;
 /// RocksDB database backend (requires `rocksdb` feature)
 pub mod rocksdb;
 
+/// Database backend trait.
 pub trait DatabaseBackend<'a>: Innerable + Sized + Send + Sync + 'a {
     /// The type of the 'column', this is a reference to a database.
-    type Column: DatabaseColumn;
+    type Column: DatabaseCommon;
+
+    /// Create or open a database.
     fn create_or_open(&'a self, db: &str) -> Result<Self::Column>;
 }
 
-pub trait DatabaseColumn {
+/// Database column trait.
+pub trait DatabaseCommon {
+    /// Set a key-value pair.
     fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()>;
+
+    /// Get a value by key.
     fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>>;
+
+    /// Get a value by key in batch.
     fn get_multi<I>(&self, keys: I) -> Result<Vec<Option<Vec<u8>>>>
     where
         I: IntoIterator,
         I::Item: AsRef<[u8]>;
+
+    /// Delete a key-value pair.
     fn delete(&self, key: impl AsRef<[u8]>) -> Result<()>;
+
+    /// Check if a key exists.
     fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool>;
+}
+
+pub trait DatabaseCommonClear: DatabaseCommon {
+    /// Clear the database.
     fn clear(&self) -> Result<()>;
 }
 
-pub trait DatabaseColumnRef<'c>: DatabaseColumn {
+/// Database column trait that returns references.
+pub trait DatabaseCommonRef<'c>: DatabaseCommon {
+    /// The type of the 'column', this is a reference to a database.
     type Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync;
-    fn get_ref(&self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>>;
+
+    /// Get a value by key.
+    fn get_ref(&'c self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>>;
+}
+
+/// Database column trait that returns references in batch.
+pub trait DatabaseCommonRefBatch<'c>: DatabaseCommon {
+    /// The type of the 'column', this is a reference to a database.
+    type Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync;
+
+    /// Get a value by key in batch.
     fn get_multi_ref<I>(&self, keys: I) -> Result<Vec<Option<Self::Ref>>>
     where
         I: IntoIterator,
         I::Item: AsRef<[u8]>;
 }
 
-pub trait DatabaseTxn: DatabaseColumn {
-    fn commit(&self) -> Result<()>;
-    fn rollback(&self) -> Result<()>;
+/// Database transaction trait.
+pub trait DatabaseTxn: DatabaseCommon {
+    /// Commit the transaction.
+    fn commit(self) -> Result<()>;
+
+    /// Rollback the transaction.
+    fn rollback(self) -> Result<()>;
 }
 
-pub trait DatabaseColumnTxn<'c>: DatabaseColumn {
+/// Database transaction trait that returns references.
+pub trait DatabaseColumnTxn<'c>: DatabaseCommon {
     type Txn: DatabaseTxn;
+
+    /// Start a transaction.
     fn transaction(&self) -> Result<Self::Txn>;
 }
