@@ -1,6 +1,7 @@
 use super::{DBColumn, DBColumnDelete, DBColumnRef, DatabaseBackend};
-use crate::{Error, Result};
+use crate::{Error, Innerable, Result};
 use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
+use std::sync::Arc;
 
 mod normal;
 mod optimistic;
@@ -11,6 +12,21 @@ mod tx;
 pub use normal::*;
 pub use optimistic::*;
 pub use pessimistic::*;
+
+pub(super) struct BoundCFHandle<'a>(Arc<rocksdb::BoundColumnFamily<'a>>);
+
+impl<'a> Innerable for BoundCFHandle<'a> {
+    type Inner = Arc<rocksdb::BoundColumnFamily<'a>>;
+    fn inner(&self) -> &Self::Inner {
+        &self.0
+    }
+}
+
+// Safety: see https://github.com/rust-rocksdb/rust-rocksdb/issues/407
+// I'm not sure if this is the best way to do this, but it seems to work.
+// Using a Mutex is really ugly, since RocksDB expects a Arc<DB> and not a Arc<Mutex<DB>> => https://github.com/rust-rocksdb/rust-rocksdb/issues/803
+unsafe impl Sync for BoundCFHandle<'_> {}
+unsafe impl Send for BoundCFHandle<'_> {}
 
 trait RocksDbImpl: Sized {
     type RocksdbOptions: Default;
@@ -54,7 +70,7 @@ macro_rules! implement_column {
     ($name:ident) => {
         impl<'a> DBColumnDelete for $name<'a> {
             fn delete_db(&self) -> Result<()> {
-                self._env.db.drop_cf(&self._name)?;
+                self.env.db.drop_cf(&self.name)?;
                 Ok(())
             }
         }
@@ -66,7 +82,7 @@ macro_rules! implement_column {
             type Ref = DBPinnableSlice<'c>;
 
             fn get_ref(&self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
-                let x = self._env.db.get_pinned_cf(&self.cf_handle, key)?;
+                let x = self.env.db.get_pinned_cf(self.inner().into(), key)?;
                 let Some(x) = x else {
                     return Ok(None);
                 };
@@ -76,26 +92,26 @@ macro_rules! implement_column {
 
         impl<'a> DBColumn for $name<'a> {
             fn set(&self, key: impl AsRef<[u8]>, val: &[u8]) -> Result<()> {
-                self._env.db.put_cf(&self.cf_handle, key, val)?;
+                self.env.db.put_cf(self.inner(), key, val)?;
                 Ok(())
             }
 
             fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
-                match self._env.db.get_cf(&self.cf_handle, key)? {
+                match self.env.db.get_cf(self.inner(), key)? {
                     Some(x) => Ok(Some(x.to_vec())),
                     None => Ok(None),
                 }
             }
 
             fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool> {
-                match self._env.db.get_cf(&self.cf_handle, key)? {
+                match self.env.db.get_cf(self.inner(), key)? {
                     Some(_) => Ok(true),
                     None => Ok(false),
                 }
             }
 
             fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
-                self._env.db.delete_cf(&self.cf_handle, key)?;
+                self.env.db.delete_cf(self.inner(), key)?;
                 Ok(())
             }
 
@@ -104,8 +120,8 @@ macro_rules! implement_column {
                 I: IntoIterator,
                 I::Item: AsRef<[u8]>,
             {
-                let keys = keys.into_iter().map(|key| (&self.cf_handle, key));
-                let values = self._env.db.multi_get_cf(keys);
+                let keys = keys.into_iter().map(|key| (self.inner(), key));
+                let values = self.env.db.multi_get_cf(keys);
                 let values = values
                     .into_iter()
                     .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -121,11 +137,7 @@ macro_rules! implement_backend {
             type Column = $col<'a>;
             fn create_or_open(&'a self, name: &str) -> super::Result<Self::Column> {
                 if let Some(handle) = self.db.cf_handle(name) {
-                    return Ok($col {
-                        _name: name.to_owned(),
-                        _env: self,
-                        cf_handle: handle,
-                    });
+                    return Ok($col::new(name.to_owned(), self, handle));
                 };
 
                 let cf_opts = rocksdb::Options::default();
@@ -134,11 +146,7 @@ macro_rules! implement_backend {
                     db: name.to_string(),
                 })?;
 
-                Ok($col {
-                    _name: name.to_owned(),
-                    _env: self,
-                    cf_handle: handle,
-                })
+                Ok($col::new(name.to_owned(), self, handle))
             }
         }
 

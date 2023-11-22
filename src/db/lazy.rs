@@ -2,8 +2,6 @@ use std::{marker::PhantomData, sync::Arc};
 
 use crate::{backend::DatabaseBackend, Database, Env, Result};
 
-// TODO: figure out a better way to make database + Sync
-
 #[derive(Clone)]
 pub struct DatabaseLazy<'a, K, V, D: DatabaseBackend<'a>> {
     pub env: Arc<&'a Env<'a, D>>,

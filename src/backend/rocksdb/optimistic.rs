@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::RocksDbImpl;
+use super::{BoundCFHandle, RocksDbImpl};
 use crate::{
     Result, {Flushable, Innerable},
 };
@@ -21,16 +21,30 @@ impl Flushable for RocksDbOptimistic<'_> {
 
 /// A RocksDB database column family.
 pub struct RocksDbOptimisticColumn<'a> {
-    pub(crate) _name: String,
-    pub(crate) _env: &'a RocksDbOptimistic<'a>,
-    pub(crate) cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
+    pub(crate) name: String,
+    pub(crate) env: &'a RocksDbOptimistic<'a>,
+    cf_handle: BoundCFHandle<'a>,
+}
+
+impl<'a> RocksDbOptimisticColumn<'a> {
+    pub(super) fn new(
+        name: String,
+        env: &'a RocksDbOptimistic<'a>,
+        cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
+    ) -> Self {
+        Self {
+            name,
+            env,
+            cf_handle: BoundCFHandle(cf_handle),
+        }
+    }
 }
 
 impl<'a> Innerable for RocksDbOptimisticColumn<'a> {
     type Inner = Arc<rocksdb::BoundColumnFamily<'a>>;
 
     fn inner(&self) -> &Self::Inner {
-        &self.cf_handle
+        self.cf_handle.inner()
     }
 }
 

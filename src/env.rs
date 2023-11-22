@@ -65,6 +65,7 @@ impl<'a, D: DatabaseBackend<'a>> Env<'a, D> {
         Database::new(self, name)
     }
 
+    // TODO: Is this useful now that RocksDB is Sync?
     #[cfg(feature = "unstable_lasydb")]
     /// Open or create a database lazily.
     /// This is useful for sharing the same database across threads.

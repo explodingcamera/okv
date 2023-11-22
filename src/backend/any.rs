@@ -1,7 +1,7 @@
 // TODO: maybe use https://crates.io/crates/enum_dispatch instead of this?
 
 use super::{DBColumn, DBColumnClear, DatabaseBackend, Innerable};
-use crate::{rocksdb::RocksDb, Result};
+use crate::Result;
 
 /// Any Database Backend
 pub enum AnyDatabaseBackend<'c> {

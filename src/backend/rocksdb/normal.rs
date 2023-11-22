@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::RocksDbImpl;
+use super::{BoundCFHandle, RocksDbImpl};
 use crate::{backend::DBColumnRefBatch, Flushable, Innerable, Result};
 use inherent::inherent;
 use rocksdb::DBPinnableSlice;
@@ -20,22 +20,36 @@ impl Flushable for RocksDb<'_> {
 
 /// A RocksDB database column family.
 pub struct RocksDbColumn<'a> {
-    pub(crate) _name: String,
-    pub(crate) _env: &'a RocksDb<'a>,
-    pub(crate) cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
+    pub(crate) name: String,
+    pub(crate) env: &'a RocksDb<'a>,
+    cf_handle: BoundCFHandle<'a>,
+}
+
+impl<'a> RocksDbColumn<'a> {
+    pub(super) fn new(
+        name: String,
+        env: &'a RocksDb<'a>,
+        cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
+    ) -> Self {
+        Self {
+            name,
+            env,
+            cf_handle: BoundCFHandle(cf_handle),
+        }
+    }
 }
 
 impl<'b> Innerable for RocksDbColumn<'b> {
     type Inner = Arc<rocksdb::BoundColumnFamily<'b>>;
 
     fn inner(&self) -> &Self::Inner {
-        &self.cf_handle
+        self.cf_handle.inner()
     }
 }
 
 impl Flushable for RocksDbColumn<'_> {
     fn flush(&self) -> Result<()> {
-        self._env.db.flush_cf(&self.cf_handle)?;
+        self.env.db.flush_cf(self.inner())?;
         Ok(())
     }
 }
@@ -71,11 +85,7 @@ where
         I: IntoIterator,
         I::Item: AsRef<[u8]>,
     {
-        let values = self
-            ._env
-            .db
-            .batched_multi_get_cf(&self.cf_handle, keys, false);
-
+        let values = self.env.db.batched_multi_get_cf(self.inner(), keys, false);
         let values = values
             .into_iter()
             .collect::<std::result::Result<Vec<_>, _>>()?;

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::RocksDbImpl;
+use super::{BoundCFHandle, RocksDbImpl};
 use crate::{Innerable, Result};
 use inherent::inherent;
 
@@ -12,15 +12,29 @@ pub struct RocksDbPessimistic<'a> {
 
 /// A RocksDB database column family.
 pub struct RocksDbPessimisticColumn<'a> {
-    pub(crate) _name: String,
-    pub(crate) _env: &'a RocksDbPessimistic<'a>,
-    pub(crate) cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
+    pub(crate) name: String,
+    pub(crate) env: &'a RocksDbPessimistic<'a>,
+    cf_handle: BoundCFHandle<'a>,
+}
+
+impl<'a> RocksDbPessimisticColumn<'a> {
+    pub(super) fn new(
+        name: String,
+        env: &'a RocksDbPessimistic<'a>,
+        cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
+    ) -> Self {
+        Self {
+            name,
+            env,
+            cf_handle: BoundCFHandle(cf_handle),
+        }
+    }
 }
 
 impl<'a> Innerable for RocksDbPessimisticColumn<'a> {
     type Inner = Arc<rocksdb::BoundColumnFamily<'a>>;
     fn inner(&self) -> &Self::Inner {
-        &self.cf_handle
+        self.cf_handle.inner()
     }
 }
 
