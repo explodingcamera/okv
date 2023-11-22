@@ -6,12 +6,11 @@ use inherent::inherent;
 use rocksdb::DBPinnableSlice;
 
 /// A RocksDB database backend.
-pub struct RocksDb<'a> {
+pub struct RocksDb {
     pub(crate) db: rocksdb::DB,
-    marker: std::marker::PhantomData<&'a ()>,
 }
 
-impl Flushable for RocksDb<'_> {
+impl Flushable for RocksDb {
     fn flush(&self) -> Result<()> {
         self.db.flush()?;
         Ok(())
@@ -21,14 +20,14 @@ impl Flushable for RocksDb<'_> {
 /// A RocksDB database column family.
 pub struct RocksDbColumn<'a> {
     pub(crate) name: String,
-    pub(crate) env: &'a RocksDb<'a>,
+    pub(crate) env: &'a RocksDb,
     cf_handle: BoundCFHandle<'a>,
 }
 
 impl<'a> RocksDbColumn<'a> {
     pub(super) fn new(
         name: String,
-        env: &'a RocksDb<'a>,
+        env: &'a RocksDb,
         cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
     ) -> Self {
         Self {
@@ -55,7 +54,7 @@ impl Flushable for RocksDbColumn<'_> {
 }
 
 #[inherent]
-impl RocksDbImpl for RocksDb<'_> {
+impl RocksDbImpl for RocksDb {
     type RocksdbOptions = rocksdb::Options;
     pub fn new(connect_str: &str) -> Result<Self>;
     pub fn list_databases(connect_str: &str) -> Result<Option<Vec<String>>>;
@@ -67,10 +66,7 @@ impl RocksDbImpl for RocksDb<'_> {
     ) -> Result<Self> {
         config.create_if_missing(true);
         let db = rocksdb::DB::open_cf(&config, connect_str, cfs.iter())?;
-        Ok(Self {
-            db,
-            marker: Default::default(),
-        })
+        Ok(Self { db })
     }
 }
 

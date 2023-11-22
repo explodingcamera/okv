@@ -10,7 +10,7 @@ pub enum AnyDatabaseBackend<'c> {
     MemDB(super::mem::MemDB<'c>),
     #[cfg(feature = "rocksdb")]
     /// See [`RocksDb`](super::rocksdb::RocksDb)
-    RocksDB(super::rocksdb::RocksDb<'c>),
+    RocksDB(super::rocksdb::RocksDb),
 }
 
 /// Any Database Column

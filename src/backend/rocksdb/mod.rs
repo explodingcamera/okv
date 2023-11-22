@@ -133,7 +133,7 @@ macro_rules! implement_column {
 
 macro_rules! implement_backend {
     ($name:ident, $col:ident, $db:ident) => {
-        impl<'a> DatabaseBackend<'a> for $name<'a> {
+        impl<'a> DatabaseBackend<'a> for $name {
             type Column = $col<'a>;
             fn create_or_open(&'a self, name: &str) -> super::Result<Self::Column> {
                 if let Some(handle) = self.db.cf_handle(name) {
@@ -150,7 +150,7 @@ macro_rules! implement_backend {
             }
         }
 
-        impl<'a> crate::backend::Innerable for $name<'a> {
+        impl<'a> crate::backend::Innerable for $name {
             type Inner = $db;
             fn inner(&self) -> &Self::Inner {
                 &self.db
