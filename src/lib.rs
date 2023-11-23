@@ -46,7 +46,7 @@ mod test {
         let db = env.open_tupel::<(&str, SerdeJson<Test>)>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
-        assert_eq!(res, test);
+        assert_eq!(res, Some(test));
         let env2 = env.clone();
 
         let handler = thread::spawn(move || {
@@ -58,7 +58,7 @@ mod test {
             let db2 = db.clone();
             db2.set("hello", &test).unwrap();
             let res = db.get("hello").unwrap();
-            assert_eq!(res, test);
+            assert_eq!(res, Some(test));
         });
 
         handler.join().unwrap();
@@ -86,7 +86,7 @@ mod test {
         let db = env.open::<&str, SerdeJson<Test>>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
-        assert_eq!(res, test);
+        assert_eq!(res, Some(test));
 
         let env2 = env.clone();
         let handler = thread::spawn(move || {
@@ -98,7 +98,7 @@ mod test {
             let db2 = db.clone();
             db2.set("hello", &test).unwrap();
             let res = db.get("hello").unwrap();
-            assert_eq!(res, test);
+            assert_eq!(res, Some(test));
         });
 
         handler.join().unwrap();
@@ -122,7 +122,7 @@ mod test {
         let db = env.open::<&str, SerdeJson<Test>>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
-        assert_eq!(res, test);
+        assert_eq!(res, Some(test));
 
         let env2 = env.clone();
         let handler = thread::spawn(move || {
@@ -134,7 +134,7 @@ mod test {
             let db2 = db.clone();
             db2.set("hello", &test).unwrap();
             let res = db.get("hello").unwrap();
-            assert_eq!(res, test);
+            assert_eq!(res, Some(test));
         });
 
         handler.join().unwrap();

@@ -51,6 +51,19 @@ pub trait DBCommon<Key, Val> {
     /// Set a key to a value in the database.
     fn set_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()>;
 
+    /// Set a `key` to a value in the database if the key does not exist.
+    fn set_nx_raw<'k, 'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<bool>;
+
+    /// Delete the serialized `val` from the database by `key`.
+    fn delete<'k>(&self, key: &'k Key::EItem) -> Result<()>
+    where
+        Key: BytesEncode<'k>;
+
+    /// Check if the database contains the given key.
+    fn contains<'k>(&self, key: &'k Key::EItem) -> Result<bool>
+    where
+        Key: BytesEncode<'k>;
+
     /// Set a `key` to the serialized `val` in the database.
     fn set<'k, 'v>(&'v self, key: &'k Key::EItem, val: &'v Val::EItem) -> Result<()>
     where
@@ -63,25 +76,36 @@ pub trait DBCommon<Key, Val> {
         Ok(())
     }
 
+    /// Set a `key` to a serialized value in the database if the key does not exist.
+    fn set_nx<'k, 'v>(&'v self, key: &'k Key::EItem, val: &'v Val::EItem) -> Result<bool>
+    where
+        Key: BytesEncode<'k>,
+        Val: BytesEncode<'v>,
+    {
+        let key_bytes = Key::bytes_encode(key)?;
+        let val_bytes = Val::bytes_encode(val)?;
+        self.set_nx_raw(key_bytes.as_ref(), val_bytes.as_ref())
+    }
+
     /// Set a `key` to a value in the database.
     fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>>;
 
     /// Get the serialized `val` from the database by `key`.
-    fn get<'k, 'v>(&self, key: &'k Key::EItem) -> Result<Val::DItem>
+    fn get<'k, 'v>(&self, key: &'k Key::EItem) -> Result<Option<Val::DItem>>
     where
         Key: BytesEncode<'k>,
         Val: BytesDecodeOwned,
     {
         let key_bytes = Key::bytes_encode(key)?;
 
-        let val_bytes = self
-            .get_raw(&key_bytes)?
-            .ok_or_else(|| crate::Error::KeyNotFound {
-                key: key_bytes.to_vec(),
-            })?;
-
-        let res = Val::bytes_decode_owned(&val_bytes)?;
-        Ok(res)
+        let val_bytes = self.get_raw(&key_bytes)?;
+        match val_bytes {
+            Some(val_bytes) => {
+                let res = Val::bytes_decode_owned(&val_bytes)?;
+                Ok(Some(res))
+            }
+            None => Ok(None),
+        }
     }
 
     /// Get values from the database by `keys`.
@@ -113,16 +137,6 @@ pub trait DBCommon<Key, Val> {
 
         Ok(res)
     }
-
-    /// Delete the serialized `val` from the database by `key`.
-    fn delete<'k>(&self, key: &'k Key::EItem) -> Result<()>
-    where
-        Key: BytesEncode<'k>;
-
-    /// Check if the database contains the given key.
-    fn contains<'k>(&self, key: &'k Key::EItem) -> Result<bool>
-    where
-        Key: BytesEncode<'k>;
 }
 
 /// A trait that represents a common database interface can be cleared.

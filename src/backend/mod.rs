@@ -26,6 +26,18 @@ pub trait DBColumn {
     /// Set a key-value pair.
     fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()>;
 
+    /// Set a key-value pair if the key does not exist.
+    fn set_nx(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<bool> {
+        let key = key.as_ref();
+        let val = val.as_ref();
+        if self.contains(key)? {
+            Ok(false)
+        } else {
+            self.set(key, val)?;
+            Ok(true)
+        }
+    }
+
     /// Get a value by key.
     fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>>;
 

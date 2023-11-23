@@ -1,10 +1,17 @@
 # Changelog
 
+## Unreleased
+
+* Added `Database::set_nx` method for setting a value if it does not exist
+* `Database::get` now returns a `Result<Option<T>, Error>` instead of `Result<T, Error>`
+
 ## v0.1.0 - 2023-11-23 
 
 * Database now works without specifying a lifetime parameter
   > This is done by using a `self_cell` to store the associated environment
 * Remove `mut` requirement for all methods
+
+Full Changelog: https://github.com/explodingcamera/okv/commits/v0.1.0
 
 ## v0.0.8 - 2023-11-23
 

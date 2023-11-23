@@ -53,13 +53,25 @@ where
     }
 
     /// Get the serialized `val` from the database by `key`.
-    pub fn get<'k, 'v>(&self, key: &'k <Key>::EItem) -> Result<<Val>::DItem>
+    pub fn get<'k, 'v>(&self, key: &'k <Key>::EItem) -> Result<Option<<Val>::DItem>>
     where
         Key: BytesEncode<'k>,
         Val: BytesDecodeOwned;
 
     /// Set a `key` to the serialized `val` in the database.
     pub fn set<'k, 'v>(&'v self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
+    where
+        Key: BytesEncode<'k>,
+        Val: BytesEncode<'v>;
+
+    /// Set a `key` to a value in the database if the key does not exist.
+    pub fn set_nx_raw<'k, 'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<bool> {
+        let res = self.0.column.set_nx(key, val)?;
+        Ok(res)
+    }
+
+    /// Set a `key` to a serialized value in the database if the key does not exist.
+    pub fn set_nx<'k, 'v>(&'v self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<bool>
     where
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>;
