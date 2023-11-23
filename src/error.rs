@@ -3,22 +3,6 @@ use thiserror::Error;
 /// A specialized [`Result`] type for this crate.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// An extension trait for [`Result`]s.
-pub trait ResultExt<T> {
-    /// Allow [`Error::KeyNotFound`] to be returned as `Ok(None)`.
-    fn allow_not_found(self) -> Result<Option<T>>;
-}
-
-impl<T> ResultExt<T> for Result<T> {
-    fn allow_not_found(self) -> Result<Option<T>> {
-        match self {
-            Ok(v) => Ok(Some(v)),
-            Err(Error::KeyNotFound { .. }) => Ok(None),
-            Err(e) => Err(e),
-        }
-    }
-}
-
 /// An error that can occur when interacting with the database.
 #[derive(Error, Debug)]
 pub enum Error {

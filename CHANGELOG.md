@@ -3,7 +3,8 @@
 ## Unreleased
 
 * Added `Database::set_nx` method for setting a value if it does not exist
-* `Database::get` now returns a `Result<Option<T>, Error>` instead of `Result<T, Error>`
+* `Database::get` and `Database::get_ref` now return a `Result<Option<T>, Error>` instead of `Result<T, Error>`
+* Removed `ResultExt` trait
 
 ## v0.1.0 - 2023-11-23 
 
