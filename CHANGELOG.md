@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.0 - 2023-11-23 
 
 * Database now works without specifying a lifetime parameter
   > This is done by using a `self_cell` to store the associated environment
