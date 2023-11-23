@@ -52,11 +52,9 @@ impl DatabaseBackend for MemDB {
                     Ok(col)
                 }
                 TryResult::Present(col) => Ok(col),
-                TryResult::Locked => {
-                    return Err(Error::DatabaseNotFound {
-                        db: name.to_string(),
-                    });
-                }
+                TryResult::Locked => Err(Error::DatabaseNotFound {
+                    db: name.to_string(),
+                }),
             }
         })?;
 
@@ -77,21 +75,21 @@ self_cell!(
     }
 );
 
-impl<'a> DBColumnClear for MemDBColumn {
+impl DBColumnClear for MemDBColumn {
     fn clear(&self) -> super::Result<()> {
         self.borrow_dependent().clear();
         Ok(())
     }
 }
 
-impl<'a> Flushable for MemDBColumn {
+impl Flushable for MemDBColumn {
     /// No-op.
     fn flush(&self) -> super::Result<()> {
         Ok(())
     }
 }
 
-impl<'a> DBColumn for MemDBColumn {
+impl DBColumn for MemDBColumn {
     fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> super::Result<()> {
         self.borrow_dependent()
             .insert(key.as_ref().to_vec(), val.as_ref().to_vec());

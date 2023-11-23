@@ -17,7 +17,7 @@ pub struct RocksDBTransaction<'a, DB> {
 impl<'a> DBColumnTransaction<'a> for RocksDbOptimisticColumn {
     type Txn = RocksDBTransaction<'a, OptimisticTransactionDB>;
 
-    fn transaction(&self) -> crate::Result<Self::Txn> {
+    fn transaction(&'a self) -> crate::Result<Self::Txn> {
         let tx = self.db().transaction();
         Ok(RocksDBTransaction {
             tx,
@@ -29,7 +29,7 @@ impl<'a> DBColumnTransaction<'a> for RocksDbOptimisticColumn {
 impl<'a> DBColumnTransaction<'a> for RocksDbPessimisticColumn {
     type Txn = RocksDBTransaction<'a, TransactionDB>;
 
-    fn transaction(&self) -> crate::Result<Self::Txn> {
+    fn transaction(&'a self) -> crate::Result<Self::Txn> {
         let tx = self.db().transaction();
         Ok(RocksDBTransaction {
             tx,

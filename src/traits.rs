@@ -160,7 +160,7 @@ where
     /// Prefer this method over `get_multi` if you only need a reference to the value
     /// and your backend supports it.
     #[allow(clippy::type_complexity)] // trait associated type defaults are not stable yet
-    fn get_multi_ref<'k, I>(&self, keys: I) -> Result<Vec<Option<RefValue<Ref, Val::DItem>>>>
+    fn get_multi_ref<'k, I>(&'c self, keys: I) -> Result<Vec<Option<RefValue<Ref, Val::DItem>>>>
     where
         Key: BytesEncode<'k>,
         I: IntoIterator<Item = &'k Key::EItem>,

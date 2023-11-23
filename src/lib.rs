@@ -43,7 +43,7 @@ mod test {
         let backend = RocksDbOptimistic::new("database/rocks2")?;
 
         let env = Env::new(backend);
-        let mut db = env.open_tupel::<(&str, SerdeJson<Test>)>("test")?;
+        let db = env.open_tupel::<(&str, SerdeJson<Test>)>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
         assert_eq!(res, test);
@@ -55,7 +55,7 @@ mod test {
                 age: 10,
             };
             let db = env2.open::<&str, SerdeJson<Test>>("test").unwrap();
-            let mut db2 = db.clone();
+            let db2 = db.clone();
             db2.set("hello", &test).unwrap();
             let res = db.get("hello").unwrap();
             assert_eq!(res, test);
@@ -64,10 +64,10 @@ mod test {
         handler.join().unwrap();
         let db = env.open::<&str, SerdeJson<Test>>("test").unwrap();
         let _res = db.get("hello")?;
-        // let tx = db.transaction()?;
-        // tx.get("hello")?;
-        // tx.commit()?;
-        // db.delete_db()?;
+        let tx = db.transaction()?;
+        tx.get("hello")?;
+        tx.commit()?;
+        db.delete_db()?;
 
         Ok(())
     }
@@ -106,8 +106,6 @@ mod test {
         let _res = db.get("hello")?;
         db.flush()?;
 
-        let _ = db.inner();
-
         Ok(())
     }
 
@@ -121,7 +119,7 @@ mod test {
 
         let backend = MemDB::new();
         let env = Env::new(backend);
-        let mut db = env.open::<&str, SerdeJson<Test>>("test")?;
+        let db = env.open::<&str, SerdeJson<Test>>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
         assert_eq!(res, test);
@@ -133,7 +131,7 @@ mod test {
                 age: 10,
             };
             let db = env2.open::<&str, SerdeJson<Test>>("test").unwrap();
-            let mut db2 = db.clone();
+            let db2 = db.clone();
             db2.set("hello", &test).unwrap();
             let res = db.get("hello").unwrap();
             assert_eq!(res, test);

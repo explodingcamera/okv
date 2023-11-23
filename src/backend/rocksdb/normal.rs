@@ -1,5 +1,5 @@
 use super::{BoundCFHandle, RocksDbImpl};
-use crate::{backend::DBColumnRefBatch, Env, Flushable, Innerable, Result};
+use crate::{backend::DBColumnRefBatch, Env, Flushable, Result};
 use inherent::inherent;
 use rocksdb::DBPinnableSlice;
 use self_cell::self_cell;
@@ -19,25 +19,18 @@ impl Flushable for RocksDb {
 /// A RocksDB database column family.
 pub struct RocksDbColumn {
     pub(crate) name: String,
-    pub(super) inner: RocksDbColumnInner,
+    pub(crate) inner: RocksDbColumnInner,
 }
 
 self_cell!(
-    pub struct RocksDbColumnInner {
+    /// A RocksDB database column family.
+    pub(crate) struct RocksDbColumnInner {
         owner: Env<RocksDb>,
 
         #[covariant]
         dependent: BoundCFHandle,
     }
 );
-
-impl<'b> Innerable for RocksDbColumn {
-    type Inner = RocksDbColumnInner;
-
-    fn inner(&self) -> &Self::Inner {
-        &self.inner
-    }
-}
 
 impl Flushable for RocksDbColumn {
     fn flush(&self) -> Result<()> {
@@ -63,25 +56,21 @@ impl RocksDbImpl for RocksDb {
     }
 }
 
-// TODO: Implement DBColumnRefBatch for RocksDbColumn
-// impl<'b, 'c> DBColumnRefBatch<'c> for RocksDbColumn
-// where
-//     'b: 'c,
-// {
-//     type Ref = DBPinnableSlice<'c>;
+impl<'c> DBColumnRefBatch<'c> for RocksDbColumn {
+    type Ref = DBPinnableSlice<'c>;
 
-//     fn get_multi_ref<I>(&self, keys: I) -> Result<Vec<Option<Self::Ref>>>
-//     where
-//         I: IntoIterator,
-//         I::Item: AsRef<[u8]>,
-//     {
-//         let values = self
-//             .db()
-//             .batched_multi_get_cf(self.cf_handle(), keys, false);
-//         let values = values
-//             .into_iter()
-//             .collect::<std::result::Result<Vec<_>, _>>()?;
+    fn get_multi_ref<I>(&'c self, keys: I) -> Result<Vec<Option<Self::Ref>>>
+    where
+        I: IntoIterator,
+        I::Item: AsRef<[u8]>,
+    {
+        let values = self
+            .db()
+            .batched_multi_get_cf(self.cf_handle(), keys, false);
+        let values = values
+            .into_iter()
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
-//         Ok(values)
-//     }
-// }
+        Ok(values)
+    }
+}

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Database now works without specifying a lifetime parameter
+
 ## v0.0.8 - 2023-11-23
 
 * Add `_raw` methods to `Database` for raw access to the underlying database

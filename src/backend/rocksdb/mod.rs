@@ -1,17 +1,18 @@
-use super::{DBColumn, DatabaseBackend};
+use super::{DBColumn, DBColumnDelete, DBColumnRef, DatabaseBackend};
 use crate::{Env, Error, Innerable, Result};
-use rocksdb::{BoundColumnFamily, OptimisticTransactionDB, TransactionDB, DB};
+use rocksdb::{BoundColumnFamily, DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 use std::sync::Arc;
 
 mod normal;
 mod optimistic;
 mod pessimistic;
 
-// mod tx;
+mod tx;
 pub use normal::*;
 pub use optimistic::*;
 pub use pessimistic::*;
 
+/// A bound column family handle for RocksDB.
 pub struct BoundCFHandle<'a>(Arc<rocksdb::BoundColumnFamily<'a>>);
 
 impl<'a> Innerable for BoundCFHandle<'a> {
@@ -67,30 +68,25 @@ trait RocksDbImpl: Sized {
 
 macro_rules! implement_column_traits {
     ($name:ident) => {
-        // TODO: implement DBColumnDelete for RocksDbColumn
-        // impl DBColumnDelete for $name {
-        //     fn delete_db(&mut self) -> Result<()> {
-        //         self.db().drop_cf(&self.name.clone());
-        //         Ok(())
-        //     }
-        // }
+        impl DBColumnDelete for $name {
+            fn delete_db(&self) -> Result<()> {
+                self.db().drop_cf(&self.name.clone())?;
+                Ok(())
+            }
+        }
 
-        // TODO: implement DBColumnRef for RocksDbColumn
-        // impl<'b, 'c> DBColumnRef<'c> for $name
-        // where
-        //     'b: 'c,
-        // {
-        //     type Ref = DBPinnableSlice<'c>;
+        impl<'c> DBColumnRef<'c> for $name {
+            type Ref = DBPinnableSlice<'c>;
 
-        //     fn get_ref(&self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
-        //         let x = self.db().get_pinned_cf(self.cf_handle(), key)?;
-        //         let Some(x) = x else {
-        //             return Ok(None);
-        //         };
+            fn get_ref(&'c self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
+                let x = self.db().get_pinned_cf(self.cf_handle(), key)?;
+                let Some(x) = x else {
+                    return Ok(None);
+                };
 
-        //         Ok(Some(x))
-        //     }
-        // }
+                Ok(Some(x))
+            }
+        }
 
         impl DBColumn for $name {
             fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
@@ -137,7 +133,7 @@ macro_rules! implement_column {
     ($name:ident, $col:ident, $col_inner:ident, $db:ident) => {
         impl $col {
             pub(crate) fn cf_handle(&self) -> &Arc<BoundColumnFamily<'_>> {
-                self.inner().borrow_dependent().inner()
+                self.inner.borrow_dependent().inner()
             }
 
             pub(crate) fn db(&self) -> &$db {
@@ -173,7 +169,7 @@ macro_rules! implement_backend {
         impl DatabaseBackend for $name {
             type Column = $col;
             fn create_or_open(env: Env<$name>, name: &str) -> super::Result<Self::Column> {
-                Ok($col::try_new(env, name.to_owned())?)
+                $col::try_new(env, name.to_owned())
             }
         }
 

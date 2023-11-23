@@ -1,5 +1,5 @@
 use super::{BoundCFHandle, RocksDbImpl};
-use crate::{Env, Innerable, Result};
+use crate::{Env, Result};
 use inherent::inherent;
 use self_cell::self_cell;
 
@@ -11,24 +11,18 @@ pub struct RocksDbPessimistic {
 /// A RocksDB database column family.
 pub struct RocksDbPessimisticColumn {
     pub(crate) name: String,
-    pub(super) inner: RocksDbPessimisticColumnInner,
+    pub(crate) inner: RocksDbPessimisticColumnInner,
 }
 
 self_cell!(
-    pub struct RocksDbPessimisticColumnInner {
+    /// A RocksDB database column family.
+    pub(crate) struct RocksDbPessimisticColumnInner {
         owner: Env<RocksDbPessimistic>,
 
         #[covariant]
         dependent: BoundCFHandle,
     }
 );
-
-impl Innerable for RocksDbPessimisticColumn {
-    type Inner = RocksDbPessimisticColumnInner;
-    fn inner(&self) -> &Self::Inner {
-        &self.inner
-    }
-}
 
 #[inherent]
 impl RocksDbImpl for RocksDbPessimistic {

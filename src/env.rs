@@ -53,6 +53,7 @@ impl<'a, D: DatabaseBackend> Env<D> {
         Database::new(self.clone(), name)
     }
 
+    // TODO: Is this useful now that Database doesn't have a lifetime?
     /// Same as [`Env::open`] but you can specify the type of the key and value using a tuple.
     /// This is useful when you want to reuse the same type for multiple databases.
     pub fn open_tupel<T: DatabaseType>(

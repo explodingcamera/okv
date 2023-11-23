@@ -1,5 +1,5 @@
 use super::{BoundCFHandle, RocksDbImpl};
-use crate::{Env, Flushable, Innerable, Result};
+use crate::{Env, Flushable, Result};
 use inherent::inherent;
 use self_cell::self_cell;
 
@@ -18,25 +18,18 @@ impl Flushable for RocksDbOptimistic {
 /// A RocksDB database column family.
 pub struct RocksDbOptimisticColumn {
     pub(crate) name: String,
-    pub(super) inner: RocksDbOptimisticColumnInner,
+    pub(crate) inner: RocksDbOptimisticColumnInner,
 }
 
 self_cell!(
-    pub struct RocksDbOptimisticColumnInner {
+    /// A RocksDB database column family.
+    pub(crate) struct RocksDbOptimisticColumnInner {
         owner: Env<RocksDbOptimistic>,
 
         #[covariant]
         dependent: BoundCFHandle,
     }
 );
-
-impl Innerable for RocksDbOptimisticColumn {
-    type Inner = RocksDbOptimisticColumnInner;
-
-    fn inner(&self) -> &Self::Inner {
-        &self.inner
-    }
-}
 
 #[inherent]
 impl RocksDbImpl for RocksDbOptimistic {
