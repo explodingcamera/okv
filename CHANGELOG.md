@@ -1,10 +1,13 @@
 # Changelog
 
-## Unreleased
+## v0.0.8 - 2023-11-23
 
 * Add `_raw` methods to `Database` for raw access to the underlying database
 * Added `uuid` feature for `Uuid` support
 * Properly implement `get_multi` (was previously just a loop over `get`)
+* Removed lifetime parameters from `Env`
+
+Full Changelog: https://github.com/explodingcamera/okv/commits/v0.0.8
 
 ## v0.0.7 - 2023-11-22
 
@@ -13,6 +16,8 @@
 * Added `Env::open_tupel` method for opening a database with a tuple of types
 * Added `Env::open_lazy` method for opening a database with a lazy type (as a workaround for Database not bein Sync)
 * RocksDB backend now supports + Sync
+
+Full Changelog: https://github.com/explodingcamera/okv/commits/v0.0.7
 
 ## v0.0.6 - 2023-11-22
 
@@ -23,6 +28,8 @@
 * Added `Database::delete_db` method for deleting the underlying database
 * Removed `DatabaseCommonClear` implementation for RocksDB backends and replaced with `DatabaseCommonDelete`
 * `Database::inner` now returns a reference to the underlying column instead of the database driver
+
+Full Changelog: https://github.com/explodingcamera/okv/commits/v0.0.6
 
 ## v0.0.5 - 2023-11-21
 
