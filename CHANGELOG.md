@@ -2,9 +2,14 @@
 
 ## Unreleased
 
+## v0.2.0 - 2023-11-23
+
 * Added `Database::set_nx` method for setting a value if it does not exist
 * `Database::get` and `Database::get_ref` now return a `Result<Option<T>, Error>` instead of `Result<T, Error>`
 * Removed `ResultExt` trait
+* Added `iter`, `iter_raw`, `iter_prefix`, `iter_prefix_raw` methods to `Database` and `Transaction`
+
+Full Changelog: https://github.com/explodingcamera/okv/commits/v0.2.0
 
 ## v0.1.0 - 2023-11-23 
 

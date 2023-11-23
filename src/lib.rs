@@ -27,7 +27,7 @@ mod test {
     use crate::types::serde::SerdeJson;
     use crate::Env;
 
-    #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
     struct Test {
         name: String,
         age: u32,
@@ -46,7 +46,7 @@ mod test {
         let db = env.open_tupel::<(&str, SerdeJson<Test>)>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
-        assert_eq!(res, Some(test));
+        assert_eq!(res, Some(test.clone()));
         let env2 = env.clone();
 
         let handler = thread::spawn(move || {
@@ -66,6 +66,12 @@ mod test {
         let _res = db.get("hello")?;
         let tx = db.transaction()?;
         tx.get("hello")?;
+        let x = tx.iter()?.into_iter();
+        for i in x {
+            let (key, val) = i?;
+            assert_eq!(key, "hello");
+            assert_eq!(val, test.clone());
+        }
         tx.commit()?;
         db.delete_db()?;
 
@@ -86,7 +92,7 @@ mod test {
         let db = env.open::<&str, SerdeJson<Test>>("test")?;
         db.set("hello", &test)?;
         let res = db.get("hello")?;
-        assert_eq!(res, Some(test));
+        assert_eq!(res, Some(test.clone()));
 
         let env2 = env.clone();
         let handler = thread::spawn(move || {
@@ -98,12 +104,17 @@ mod test {
             let db2 = db.clone();
             db2.set("hello", &test).unwrap();
             let res = db.get("hello").unwrap();
-            assert_eq!(res, Some(test));
+            assert_eq!(res, Some(test.clone()));
         });
 
         handler.join().unwrap();
         let db = env.open::<&str, SerdeJson<Test>>("test").unwrap();
         let _res = db.get("hello")?;
+        for i in db.iter()? {
+            let (key, val) = i?;
+            assert_eq!(key, "hello");
+            assert_eq!(val, test.clone());
+        }
         db.flush()?;
 
         Ok(())

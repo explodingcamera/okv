@@ -1,4 +1,7 @@
-use super::{DBColumn, DBColumnDelete, DBColumnRef, DatabaseBackend};
+use super::{
+    DBColumn, DBColumnDelete, DBColumnIterator, DBColumnIteratorPrefix, DBColumnRef,
+    DatabaseBackend,
+};
 use crate::{Env, Error, Innerable, Result};
 use rocksdb::{BoundColumnFamily, DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 use std::sync::Arc;
@@ -85,6 +88,40 @@ macro_rules! implement_column_traits {
                 };
 
                 Ok(Some(x))
+            }
+        }
+
+        impl DBColumnIterator for $name {
+            fn iter(&self) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+                let iter = self
+                    .db()
+                    .iterator_cf(self.cf_handle(), rocksdb::IteratorMode::Start)
+                    .map(|v| match v {
+                        Ok((k, v)) => Ok((k.to_vec(), v.to_vec())),
+                        Err(e) => Err(Error::from(e)),
+                    });
+
+                Ok(Box::new(iter))
+            }
+        }
+
+        impl DBColumnIteratorPrefix for $name {
+            fn iter_prefix(
+                &self,
+                prefix: impl AsRef<[u8]>,
+            ) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+                let iter = self
+                    .db()
+                    .iterator_cf(
+                        self.cf_handle(),
+                        rocksdb::IteratorMode::From(prefix.as_ref(), rocksdb::Direction::Forward),
+                    )
+                    .map(|v| match v {
+                        Ok((k, v)) => Ok((k.to_vec(), v.to_vec())),
+                        Err(e) => Err(Error::from(e)),
+                    });
+
+                Ok(Box::new(iter))
             }
         }
 

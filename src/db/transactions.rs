@@ -3,8 +3,10 @@ use std::marker::PhantomData;
 use inherent::inherent;
 
 use crate::{
-    backend::{DBColumn, DBColumnTransaction, DBTransaction},
-    BytesDecodeOwned, BytesEncode, Result,
+    backend::{
+        DBColumn, DBColumnIterator, DBColumnIteratorPrefix, DBColumnTransaction, DBTransaction,
+    },
+    BytesDecodeOwned, BytesEncode, DBCommonIter, DBCommonIterPrefix, DBIterator, Result,
 };
 
 pub struct DatabaseTransaction<'a, K, V, C>
@@ -105,5 +107,46 @@ where
         let key_bytes = Key::bytes_encode(key)?;
         let res = self.column.contains(key_bytes)?;
         Ok(res)
+    }
+}
+
+#[inherent]
+impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, C> DBCommonIter<K, V>
+    for DatabaseTransaction<'a, K, V, C>
+where
+    for<'b> C: DBColumnTransaction<'b>,
+    <C as DBColumnTransaction<'a>>::Txn: DBColumnIterator,
+{
+    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
+    pub fn iter(&self) -> Result<DBIterator<K::DItem, V::DItem>>;
+
+    /// Iterate over all key-value pairs in the database.
+    pub fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>> {
+        let iter = self.column.iter()?;
+        Ok(Box::new(iter))
+    }
+}
+
+#[inherent]
+impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, C> DBCommonIterPrefix<'a, K, V>
+    for DatabaseTransaction<'a, K, V, C>
+where
+    C: DBColumnTransaction<'a>,
+    C::Txn: DBColumnIteratorPrefix,
+{
+    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
+    #[allow(clippy::type_complexity)] // not that complex really
+    pub fn iter_prefix<'k, Prefix: BytesEncode<'k>>(
+        &'a self,
+        prefix: &'k Prefix::EItem,
+    ) -> Result<DBIterator<'a, K::DItem, V::DItem>>;
+
+    /// Iterate over all key-value pairs in the database.
+    pub fn iter_prefix_raw(
+        &'a self,
+        prefix: impl AsRef<[u8]>,
+    ) -> Result<DBIterator<'a, Vec<u8>, Vec<u8>>> {
+        let iter = self.column.iter_prefix(prefix)?;
+        Ok(Box::new(iter))
     }
 }

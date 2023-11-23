@@ -1,6 +1,8 @@
 use crate::{Env, Error, Flushable, Result};
 
-use super::{DBColumn, DBColumnClear, DatabaseBackend, Innerable};
+use super::{
+    DBColumn, DBColumnClear, DBColumnIterator, DBColumnIteratorPrefix, DatabaseBackend, Innerable,
+};
 use dashmap::{try_result::TryResult, DashMap};
 use self_cell::self_cell;
 
@@ -122,5 +124,34 @@ impl DBColumn for MemDBColumn {
     fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
         self.borrow_dependent().remove(&key.as_ref().to_vec());
         Ok(())
+    }
+}
+
+impl DBColumnIterator for MemDBColumn {
+    fn iter(&self) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+        let iter = self
+            .borrow_dependent()
+            .iter()
+            .map(|item| (item.key().clone(), item.value().clone()))
+            .map(Ok);
+
+        Ok(Box::new(iter))
+    }
+}
+
+impl DBColumnIteratorPrefix for MemDBColumn {
+    fn iter_prefix<'a>(
+        &'a self,
+        prefix: impl AsRef<[u8]>,
+    ) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + 'a>> {
+        let prefix = prefix.as_ref().to_vec();
+        let iter = self
+            .borrow_dependent()
+            .iter()
+            .filter(move |item| item.key().starts_with(&prefix))
+            .map(|item| (item.key().clone(), item.value().clone()))
+            .map(Ok);
+
+        Ok(Box::new(iter))
     }
 }

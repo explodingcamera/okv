@@ -1,7 +1,7 @@
 use crate::db::transactions::DatabaseTransaction;
 use crate::traits::{BytesDecode, BytesDecodeOwned, BytesEncode, Flushable, Innerable};
-use crate::Env;
 use crate::{backend::*, types::RefValue, Result};
+use crate::{DBCommonIter, DBCommonIterPrefix, DBIterator, Env};
 use inherent::inherent;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -258,5 +258,47 @@ where
     /// Can be used to access the database directly.
     pub fn flush(&self) -> Result<()> {
         self.0.column.flush()
+    }
+}
+
+// Databases that support iterating
+#[inherent]
+impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, D, C> DBCommonIter<K, V> for Database<K, V, D>
+where
+    for<'b> C: DBColumnIterator + 'a + 'b,
+    D: DatabaseBackend<Column = C>,
+{
+    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
+    pub fn iter(&self) -> Result<DBIterator<K::DItem, V::DItem>>;
+
+    /// Iterate over all key-value pairs in the database.
+    pub fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>> {
+        let iter = self.0.column.iter()?;
+        Ok(Box::new(iter))
+    }
+}
+
+// Databases that support iterating with a prefix
+#[inherent]
+impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, D, C> DBCommonIterPrefix<'a, K, V>
+    for Database<K, V, D>
+where
+    C: DBColumnIteratorPrefix + 'a,
+    D: DatabaseBackend<Column = C>,
+{
+    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
+    #[allow(clippy::type_complexity)] // not that complex really
+    pub fn iter_prefix<'k, Prefix: BytesEncode<'k>>(
+        &'a self,
+        prefix: &'k Prefix::EItem,
+    ) -> Result<DBIterator<'a, K::DItem, V::DItem>>;
+
+    /// Iterate over all key-value pairs in the database.
+    pub fn iter_prefix_raw(
+        &'a self,
+        prefix: impl AsRef<[u8]>,
+    ) -> Result<DBIterator<'a, Vec<u8>, Vec<u8>>> {
+        let iter = self.0.column.iter_prefix(prefix)?;
+        Ok(Box::new(iter))
     }
 }

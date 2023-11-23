@@ -3,7 +3,10 @@ use std::sync::Arc;
 use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB};
 
 use crate::{
-    backend::{DBColumn, DBColumnRef, DBColumnTransaction, DBTransaction},
+    backend::{
+        DBColumn, DBColumnIterator, DBColumnIteratorPrefix, DBColumnRef, DBColumnTransaction,
+        DBTransaction,
+    },
     Result,
 };
 
@@ -98,5 +101,39 @@ impl<'a, DB> DBColumnRef<'a> for RocksDBTransaction<'a, DB> {
             return Ok(None);
         };
         Ok(Some(x))
+    }
+}
+
+impl<'a, DB> DBColumnIterator for RocksDBTransaction<'a, DB> {
+    fn iter(&self) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+        let iter = self
+            .tx
+            .iterator_cf(&self.cf_handle, rocksdb::IteratorMode::Start)
+            .map(|v| match v {
+                Ok((k, v)) => Ok((k.to_vec(), v.to_vec())),
+                Err(e) => Err(e.into()),
+            });
+
+        Ok(Box::new(iter))
+    }
+}
+
+impl<'a, DB> DBColumnIteratorPrefix for RocksDBTransaction<'a, DB> {
+    fn iter_prefix(
+        &self,
+        prefix: impl AsRef<[u8]>,
+    ) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+        let iter = self
+            .tx
+            .iterator_cf(
+                &self.cf_handle,
+                rocksdb::IteratorMode::From(prefix.as_ref(), rocksdb::Direction::Forward),
+            )
+            .map(|v| match v {
+                Ok((k, v)) => Ok((k.to_vec(), v.to_vec())),
+                Err(e) => Err(e.into()),
+            });
+
+        Ok(Box::new(iter))
     }
 }

@@ -155,6 +155,7 @@ where
         Val: BytesDecode<'c>;
 }
 
+// FUTURE: use impl Trait when it's stable (https://github.com/rust-lang/rust/pull/115822)
 /// A database that can return references in batches.
 pub trait DBCommonRefBatch<'c, Key, Val, Ref>
 where
@@ -171,21 +172,18 @@ where
         Val: BytesDecode<'c>;
 }
 
+// FUTURE: use impl Trait when it's stable (https://github.com/rust-lang/rust/pull/115822)
 /// A database that supports iterators.
 pub trait DBCommonIter<Key, Val> {
-    /// The iterator type for raw byte data.
-    /// Must implement `Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>`.
-    type Iter: Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>;
-
     /// Get a raw iterator over the database.
-    fn iter_raw(&self) -> Result<Self::Iter>;
+    fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>>;
 
     /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
     #[allow(clippy::type_complexity)] // not that complex really
-    fn iter<'c>(&'c self) -> Result<Box<dyn Iterator<Item = Result<(Key::DItem, Val::DItem)>> + 'c>>
+    fn iter(&self) -> Result<DBIterator<Key::DItem, Val::DItem>>
     where
-        Val: BytesDecodeOwned + 'c,
-        Key: BytesDecodeOwned + 'c,
+        Val: BytesDecodeOwned,
+        Key: BytesDecodeOwned,
     {
         let raw_iterator = self.iter_raw()?;
         let decoded_iterator = raw_iterator.map(|item| {
@@ -199,23 +197,18 @@ pub trait DBCommonIter<Key, Val> {
 }
 
 /// A database that supports iterators over a prefix.
-pub trait DBCommonIterPrefix<Key, Val> {
-    /// The iterator type for raw byte data.
-    /// Must implement `Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>`.
-    type Iter: Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>;
-
+pub trait DBCommonIterPrefix<'c, Key, Val> {
     /// Get a raw iterator over the database for a given byte prefix.
-    fn iter_prefix_raw(&self, prefix: impl AsRef<[u8]>) -> Result<Self::Iter>;
+    fn iter_prefix_raw(&'c self, prefix: impl AsRef<[u8]>) -> Result<DBIterator<Vec<u8>, Vec<u8>>>;
 
     /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
-    #[allow(clippy::type_complexity)] // not that complex really
-    fn iter_prefix<'k, 'c, Prefix>(
+    fn iter_prefix<'k, Prefix>(
         &'c self,
         prefix: &'k Prefix::EItem,
-    ) -> Result<Box<dyn Iterator<Item = Result<(Key::DItem, Val::DItem)>> + 'c>>
+    ) -> Result<DBIterator<Key::DItem, Val::DItem>>
     where
-        Val: BytesDecodeOwned + 'c,
-        Key: BytesDecodeOwned + 'c,
+        Val: BytesDecodeOwned,
+        Key: BytesDecodeOwned,
         Prefix: BytesEncode<'k>,
     {
         let prefix_bytes = Prefix::bytes_encode(prefix)?;
@@ -231,3 +224,6 @@ pub trait DBCommonIterPrefix<Key, Val> {
         Ok(Box::new(decoded_iterator))
     }
 }
+
+/// An iterator over a database.
+pub type DBIterator<'c, Key, Val> = Box<dyn Iterator<Item = Result<(Key, Val)>> + 'c>;
