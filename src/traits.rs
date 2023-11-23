@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{types::RefValue, DecodeError, EncodeError, Error, Result};
+use crate::{types::RefValue, DecodeError, EncodeError, Result};
 
 /// A trait that represents a flushable structure.
 /// This is used to flush the database on supported backends.
@@ -52,7 +52,7 @@ pub trait DBCommon<Key, Val> {
     fn set_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()>;
 
     /// Set a `key` to a value in the database if the key does not exist.
-    fn set_nx_raw<'k, 'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<bool>;
+    fn set_nx_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<bool>;
 
     /// Delete the serialized `val` from the database by `key`.
     fn delete<'k>(&self, key: &'k Key::EItem) -> Result<()>
@@ -70,10 +70,7 @@ pub trait DBCommon<Key, Val> {
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>,
     {
-        let key_bytes = Key::bytes_encode(key)?;
-        let val_bytes = Val::bytes_encode(val)?;
-        self.set_raw(key_bytes.as_ref(), val_bytes.as_ref())?;
-        Ok(())
+        self.set_raw(Key::bytes_encode(key)?, &Val::bytes_encode(val)?)
     }
 
     /// Set a `key` to a serialized value in the database if the key does not exist.
@@ -82,9 +79,7 @@ pub trait DBCommon<Key, Val> {
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>,
     {
-        let key_bytes = Key::bytes_encode(key)?;
-        let val_bytes = Val::bytes_encode(val)?;
-        self.set_nx_raw(key_bytes.as_ref(), val_bytes.as_ref())
+        self.set_nx_raw(Key::bytes_encode(key)?, &Val::bytes_encode(val)?)
     }
 
     /// Set a `key` to a value in the database.
@@ -97,13 +92,9 @@ pub trait DBCommon<Key, Val> {
         Val: BytesDecodeOwned,
     {
         let key_bytes = Key::bytes_encode(key)?;
-
-        let val_bytes = self.get_raw(&key_bytes)?;
+        let val_bytes = self.get_raw(key_bytes)?;
         match val_bytes {
-            Some(val_bytes) => {
-                let res = Val::bytes_decode_owned(&val_bytes)?;
-                Ok(Some(res))
-            }
+            Some(val_bytes) => Ok(Some(Val::bytes_decode_owned(&val_bytes)?)),
             None => Ok(None),
         }
     }
@@ -120,14 +111,13 @@ pub trait DBCommon<Key, Val> {
         I: IntoIterator<Item = &'k Key::EItem>,
         Val: BytesDecodeOwned,
     {
-        let mut encoded_keys: Vec<Vec<u8>> = vec![];
-        for key in keys {
-            let key_bytes = Key::bytes_encode(key)?;
-            encoded_keys.push(key_bytes.to_vec());
-        }
+        let encoded_keys: Result<Vec<Vec<u8>>, EncodeError> = keys
+            .into_iter()
+            .map(|key| Key::bytes_encode(key).map(|cow| cow.into_owned()))
+            .collect();
 
-        let res = self.get_multi_raw(encoded_keys)?;
-        let res = res
+        let res = self
+            .get_multi_raw(encoded_keys?)?
             .iter()
             .map(|item| match item {
                 Some(val_bytes) => Ok(Some(Val::bytes_decode_owned(val_bytes)?)),
@@ -157,7 +147,7 @@ where
     Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync,
 {
     /// Get the serialized `val` from the database by `key`.
-    /// Prefer this method over `get` if you only need a reference to the value
+    /// Prefer this method over `get` for efficiency when only a reference to the value is needed
     /// and your backend supports it.
     fn get_ref<'k>(&'c self, key: &'k Key::EItem) -> Result<Option<RefValue<Ref, Val::DItem>>>
     where
@@ -171,9 +161,9 @@ where
     Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync,
 {
     /// Get the serialized `val` from the database by `key`.
-    /// Prefer this method over `get_multi` if you only need a reference to the value
+    /// Use this method over `get_multi` for efficiency when you only need a reference to the value
     /// and your backend supports it.
-    #[allow(clippy::type_complexity)] // trait associated type defaults are not stable yet
+    #[allow(clippy::type_complexity)] // not that complex really
     fn get_multi_ref<'k, I>(&'c self, keys: I) -> Result<Vec<Option<RefValue<Ref, Val::DItem>>>>
     where
         Key: BytesEncode<'k>,
@@ -182,40 +172,62 @@ where
 }
 
 /// A database that supports iterators.
-pub trait DBCommonIter<'c, Key, Val, Iterator> {
-    /// Get an iterator over the database.
-    fn iter(&'c self) -> Result<Iterator>;
-}
-
-/// A database that supports iterators over a prefix.
-pub trait DBCommonIterPrefix<'c, Key: 'c, Val: 'c> {
-    /// The iterator type, must implement `Iterator<Item = Result<(Key::DItem, Val::DItem)>>`.
+pub trait DBCommonIter<Key, Val> {
+    /// The iterator type for raw byte data.
+    /// Must implement `Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>`.
     type Iter: Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>;
 
     /// Get a raw iterator over the database.
+    fn iter_raw(&self) -> Result<Self::Iter>;
+
+    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
+    #[allow(clippy::type_complexity)] // not that complex really
+    fn iter<'c>(&'c self) -> Result<Box<dyn Iterator<Item = Result<(Key::DItem, Val::DItem)>> + 'c>>
+    where
+        Val: BytesDecodeOwned + 'c,
+        Key: BytesDecodeOwned + 'c,
+    {
+        let raw_iterator = self.iter_raw()?;
+        let decoded_iterator = raw_iterator.map(|item| {
+            let (key_bytes, val_bytes) = item?;
+            let key = Key::bytes_decode_owned(&key_bytes)?;
+            let val = Val::bytes_decode_owned(&val_bytes)?;
+            Ok((key, val))
+        });
+        Ok(Box::new(decoded_iterator))
+    }
+}
+
+/// A database that supports iterators over a prefix.
+pub trait DBCommonIterPrefix<Key, Val> {
+    /// The iterator type for raw byte data.
+    /// Must implement `Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>`.
+    type Iter: Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>;
+
+    /// Get a raw iterator over the database for a given byte prefix.
     fn iter_prefix_raw(&self, prefix: impl AsRef<[u8]>) -> Result<Self::Iter>;
 
-    /// Get an iterator over the database.
-    fn iter_prefix<'k, Prefix>(
-        &self,
+    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
+    #[allow(clippy::type_complexity)] // not that complex really
+    fn iter_prefix<'k, 'c, Prefix>(
+        &'c self,
         prefix: &'k Prefix::EItem,
     ) -> Result<Box<dyn Iterator<Item = Result<(Key::DItem, Val::DItem)>> + 'c>>
     where
-        Val: BytesDecodeOwned,
-        Key: BytesDecodeOwned,
+        Val: BytesDecodeOwned + 'c,
+        Key: BytesDecodeOwned + 'c,
         Prefix: BytesEncode<'k>,
-        Self: 'c,
     {
         let prefix_bytes = Prefix::bytes_encode(prefix)?;
-        let raw = self.iter_prefix_raw(&prefix_bytes)?;
+        let raw_iterator = self.iter_prefix_raw(prefix_bytes)?;
 
-        let res = raw.map(|item| {
+        let decoded_iterator = raw_iterator.map(|item| {
             let (key_bytes, val_bytes) = item?;
             let key = Key::bytes_decode_owned(&key_bytes)?;
             let val = Val::bytes_decode_owned(&val_bytes)?;
             Ok((key, val))
         });
 
-        Ok(Box::new(res))
+        Ok(Box::new(decoded_iterator))
     }
 }

@@ -51,7 +51,7 @@ fn main() -> Result<()> {
     let result = db.get("test")?;
 
     // Verify the operation
-    assert_eq!(result, test);
+    assert_eq!(result, Some(test));
 
     Ok(())
 }

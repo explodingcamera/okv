@@ -48,7 +48,7 @@ where
     }
 
     /// Set a `key` to a value in the database if the key does not exist.
-    pub fn set_nx_raw<'k, 'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<bool> {
+    pub fn set_nx_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<bool> {
         let res = self.column.set_nx(key, val)?;
         Ok(res)
     }
