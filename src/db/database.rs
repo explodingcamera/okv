@@ -154,25 +154,25 @@ where
     /// Get the serialized `val` from the database by `key`.
     ///
     /// See [`get_ref`](crate::DBCommonRef::get_ref) for more information.
-    pub fn get_ref<'k>(&'a self, key: &'k Key::EItem) -> Result<RefValue<C::Ref, Val::DItem>>
+    pub fn get_ref<'k>(
+        &'a self,
+        key: &'k Key::EItem,
+    ) -> Result<Option<RefValue<C::Ref, Val::DItem>>>
     where
         Key: BytesEncode<'k>,
         Val: BytesDecode<'a>,
     {
         let key_bytes = Key::bytes_encode(key)?;
 
-        let val_bytes =
-            self.0
-                .column
-                .get_ref(key_bytes.clone())?
-                .ok_or_else(|| crate::Error::KeyNotFound {
-                    key: key_bytes.to_vec(),
-                })?;
+        let val_bytes = self.0.column.get_ref(key_bytes.clone())?;
 
-        Ok(RefValue {
-            data: val_bytes,
-            marker: PhantomData,
-        })
+        match val_bytes {
+            Some(val_bytes) => Ok(Some(RefValue {
+                data: val_bytes,
+                marker: PhantomData,
+            })),
+            None => Ok(None),
+        }
     }
 }
 

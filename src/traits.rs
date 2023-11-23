@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{types::RefValue, DecodeError, EncodeError, Result};
+use crate::{types::RefValue, DecodeError, EncodeError, Error, Result};
 
 /// A trait that represents a flushable structure.
 /// This is used to flush the database on supported backends.
@@ -145,13 +145,13 @@ pub trait DBCommonClear {
     fn clear(&self) -> Result<()>;
 }
 
-/// A trait that represents a common database interface can be deleted.
+/// A database that supports deletion.
 pub trait DBCommonDelete {
     /// Clear the database, removing all key-value pairs.
     fn delete_db(self) -> Result<()>;
 }
 
-/// A trait that represents a common database interface that returns references.
+/// A database that can return references.
 pub trait DBCommonRef<'c, Key, Val, Ref>
 where
     Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync,
@@ -159,13 +159,13 @@ where
     /// Get the serialized `val` from the database by `key`.
     /// Prefer this method over `get` if you only need a reference to the value
     /// and your backend supports it.
-    fn get_ref<'k>(&'c self, key: &'k Key::EItem) -> Result<RefValue<Ref, Val::DItem>>
+    fn get_ref<'k>(&'c self, key: &'k Key::EItem) -> Result<Option<RefValue<Ref, Val::DItem>>>
     where
         Key: BytesEncode<'k>,
         Val: BytesDecode<'c>;
 }
 
-/// A trait that represents a common database interface that returns references.
+/// A database that can return references in batches.
 pub trait DBCommonRefBatch<'c, Key, Val, Ref>
 where
     Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync,
@@ -179,4 +179,43 @@ where
         Key: BytesEncode<'k>,
         I: IntoIterator<Item = &'k Key::EItem>,
         Val: BytesDecode<'c>;
+}
+
+/// A database that supports iterators.
+pub trait DBCommonIter<'c, Key, Val, Iterator> {
+    /// Get an iterator over the database.
+    fn iter(&'c self) -> Result<Iterator>;
+}
+
+/// A database that supports iterators over a prefix.
+pub trait DBCommonIterPrefix<'c, Key: 'c, Val: 'c> {
+    /// The iterator type, must implement `Iterator<Item = Result<(Key::DItem, Val::DItem)>>`.
+    type Iter: Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>;
+
+    /// Get a raw iterator over the database.
+    fn iter_prefix_raw(&self, prefix: impl AsRef<[u8]>) -> Result<Self::Iter>;
+
+    /// Get an iterator over the database.
+    fn iter_prefix<'k, Prefix>(
+        &self,
+        prefix: &'k Prefix::EItem,
+    ) -> Result<Box<dyn Iterator<Item = Result<(Key::DItem, Val::DItem)>> + 'c>>
+    where
+        Val: BytesDecodeOwned,
+        Key: BytesDecodeOwned,
+        Prefix: BytesEncode<'k>,
+        Self: 'c,
+    {
+        let prefix_bytes = Prefix::bytes_encode(prefix)?;
+        let raw = self.iter_prefix_raw(&prefix_bytes)?;
+
+        let res = raw.map(|item| {
+            let (key_bytes, val_bytes) = item?;
+            let key = Key::bytes_decode_owned(&key_bytes)?;
+            let val = Val::bytes_decode_owned(&val_bytes)?;
+            Ok((key, val))
+        });
+
+        Ok(Box::new(res))
+    }
 }
