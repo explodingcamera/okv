@@ -1,8 +1,8 @@
-use crate::{Innerable, Result};
+use crate::{Env, Innerable, Result};
 
-#[cfg(feature = "unstable_any")]
+// #[cfg(feature = "unstable_any")]
 /// Any database backend (requires `unstable_any` feature)
-pub mod any;
+// pub mod any;
 
 #[cfg(feature = "memdb")]
 /// In-memory database backend (requires `memdb` feature)
@@ -15,12 +15,10 @@ pub mod rocksdb;
 /// Database backend trait.
 pub trait DatabaseBackend: Innerable + Sized + Send + Sync {
     /// The type of the 'column', this is a reference to a database.
-    type Column<'c>: DBColumn
-    where
-        Self: 'c;
+    type Column: DBColumn;
 
     /// Create or open a database.
-    fn create_or_open<'c>(&'c self, db: &str) -> Result<Self::Column<'c>>;
+    fn create_or_open(env: Env<Self>, db: &str) -> Result<Self::Column>;
 }
 
 /// Database column trait.
@@ -71,7 +69,7 @@ pub trait DBColumnRefBatch<'c>: DBColumn {
     type Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync;
 
     /// Get a value by key in batch.
-    fn get_multi_ref<I>(&self, keys: I) -> Result<Vec<Option<Self::Ref>>>
+    fn get_multi_ref<I>(&'c self, keys: I) -> Result<Vec<Option<Self::Ref>>>
     where
         I: IntoIterator,
         I::Item: AsRef<[u8]>;
@@ -82,7 +80,7 @@ pub trait DBColumnTransaction<'c>: DBColumn {
     type Txn: DBTransaction;
 
     /// Start a transaction.
-    fn transaction(&self) -> Result<Self::Txn>;
+    fn transaction(&'c self) -> Result<Self::Txn>;
 }
 
 /// Database transaction trait.

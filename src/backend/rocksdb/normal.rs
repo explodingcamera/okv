@@ -1,9 +1,8 @@
-use std::sync::Arc;
-
 use super::{BoundCFHandle, RocksDbImpl};
-use crate::{backend::DBColumnRefBatch, Flushable, Innerable, Result};
+use crate::{backend::DBColumnRefBatch, Env, Flushable, Result};
 use inherent::inherent;
 use rocksdb::DBPinnableSlice;
+use self_cell::self_cell;
 
 /// A RocksDB database backend.
 pub struct RocksDb {
@@ -18,37 +17,24 @@ impl Flushable for RocksDb {
 }
 
 /// A RocksDB database column family.
-pub struct RocksDbColumn<'a> {
+pub struct RocksDbColumn {
     pub(crate) name: String,
-    pub(crate) env: &'a RocksDb,
-    cf_handle: BoundCFHandle<'a>,
+    pub(crate) inner: RocksDbColumnInner,
 }
 
-impl<'a> RocksDbColumn<'a> {
-    pub(super) fn new(
-        name: String,
-        env: &'a RocksDb,
-        cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
-    ) -> Self {
-        Self {
-            name,
-            env,
-            cf_handle: BoundCFHandle(cf_handle),
-        }
+self_cell!(
+    /// A RocksDB database column family.
+    pub(crate) struct RocksDbColumnInner {
+        owner: Env<RocksDb>,
+
+        #[covariant]
+        dependent: BoundCFHandle,
     }
-}
+);
 
-impl<'b> Innerable for RocksDbColumn<'b> {
-    type Inner = Arc<rocksdb::BoundColumnFamily<'b>>;
-
-    fn inner(&self) -> &Self::Inner {
-        self.cf_handle.inner()
-    }
-}
-
-impl Flushable for RocksDbColumn<'_> {
+impl Flushable for RocksDbColumn {
     fn flush(&self) -> Result<()> {
-        self.env.db.flush_cf(self.inner())?;
+        self.db().flush_cf(self.cf_handle())?;
         Ok(())
     }
 }
@@ -70,18 +56,17 @@ impl RocksDbImpl for RocksDb {
     }
 }
 
-impl<'b, 'c> DBColumnRefBatch<'c> for RocksDbColumn<'b>
-where
-    'b: 'c,
-{
+impl<'c> DBColumnRefBatch<'c> for RocksDbColumn {
     type Ref = DBPinnableSlice<'c>;
 
-    fn get_multi_ref<I>(&self, keys: I) -> Result<Vec<Option<Self::Ref>>>
+    fn get_multi_ref<I>(&'c self, keys: I) -> Result<Vec<Option<Self::Ref>>>
     where
         I: IntoIterator,
         I::Item: AsRef<[u8]>,
     {
-        let values = self.env.db.batched_multi_get_cf(self.inner(), keys, false);
+        let values = self
+            .db()
+            .batched_multi_get_cf(self.cf_handle(), keys, false);
         let values = values
             .into_iter()
             .collect::<std::result::Result<Vec<_>, _>>()?;

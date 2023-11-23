@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+* Database now works without specifying a lifetime parameter
+  > This is done by using a `self_cell` to store the associated environment
+* Remove `mut` requirement for all methods
+
 ## v0.0.8 - 2023-11-23
 
 * Add `_raw` methods to `Database` for raw access to the underlying database

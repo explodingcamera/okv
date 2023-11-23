@@ -1,6 +1,6 @@
 use super::{DBColumn, DBColumnDelete, DBColumnRef, DatabaseBackend};
-use crate::{Error, Innerable, Result};
-use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
+use crate::{Env, Error, Innerable, Result};
+use rocksdb::{BoundColumnFamily, DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 use std::sync::Arc;
 
 mod normal;
@@ -8,12 +8,12 @@ mod optimistic;
 mod pessimistic;
 
 mod tx;
-
 pub use normal::*;
 pub use optimistic::*;
 pub use pessimistic::*;
 
-pub(super) struct BoundCFHandle<'a>(Arc<rocksdb::BoundColumnFamily<'a>>);
+/// A bound column family handle for RocksDB.
+pub struct BoundCFHandle<'a>(Arc<rocksdb::BoundColumnFamily<'a>>);
 
 impl<'a> Innerable for BoundCFHandle<'a> {
     type Inner = Arc<rocksdb::BoundColumnFamily<'a>>;
@@ -66,52 +66,50 @@ trait RocksDbImpl: Sized {
     ) -> Result<Self>;
 }
 
-macro_rules! implement_column {
+macro_rules! implement_column_traits {
     ($name:ident) => {
-        impl<'a> DBColumnDelete for $name<'a> {
+        impl DBColumnDelete for $name {
             fn delete_db(&self) -> Result<()> {
-                self.env.db.drop_cf(&self.name)?;
+                self.db().drop_cf(&self.name.clone())?;
                 Ok(())
             }
         }
 
-        impl<'b, 'c> DBColumnRef<'c> for $name<'b>
-        where
-            'b: 'c,
-        {
+        impl<'c> DBColumnRef<'c> for $name {
             type Ref = DBPinnableSlice<'c>;
 
-            fn get_ref(&self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
-                let x = self.env.db.get_pinned_cf(self.inner().into(), key)?;
+            fn get_ref(&'c self, key: impl AsRef<[u8]>) -> Result<Option<Self::Ref>> {
+                let x = self.db().get_pinned_cf(self.cf_handle(), key)?;
                 let Some(x) = x else {
                     return Ok(None);
                 };
+
                 Ok(Some(x))
             }
         }
 
-        impl<'a> DBColumn for $name<'a> {
+        impl DBColumn for $name {
             fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
-                self.env.db.put_cf(self.inner(), key, val)?;
+                self.db().put_cf(self.cf_handle(), key, val)?;
                 Ok(())
             }
 
             fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
-                match self.env.db.get_cf(self.inner(), key)? {
+                match self.db().get_cf(self.cf_handle(), key)? {
                     Some(x) => Ok(Some(x.to_vec())),
                     None => Ok(None),
                 }
             }
 
             fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool> {
-                match self.env.db.get_cf(self.inner(), key)? {
+                match self.db().get_cf(self.cf_handle(), key)? {
                     Some(_) => Ok(true),
                     None => Ok(false),
                 }
             }
 
             fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
-                self.env.db.delete_cf(self.inner(), key)?;
+                self.db().delete_cf(self.cf_handle(), key)?;
                 Ok(())
             }
 
@@ -120,8 +118,8 @@ macro_rules! implement_column {
                 I: IntoIterator,
                 I::Item: AsRef<[u8]>,
             {
-                let keys = keys.into_iter().map(|key| (self.inner(), key));
-                let values = self.env.db.multi_get_cf(keys);
+                let keys = keys.into_iter().map(|key| (self.cf_handle(), key));
+                let values = self.db().multi_get_cf(keys);
                 let values = values
                     .into_iter()
                     .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -131,22 +129,47 @@ macro_rules! implement_column {
     };
 }
 
+macro_rules! implement_column {
+    ($name:ident, $col:ident, $col_inner:ident, $db:ident) => {
+        impl $col {
+            pub(crate) fn cf_handle(&self) -> &Arc<BoundColumnFamily<'_>> {
+                self.inner.borrow_dependent().inner()
+            }
+
+            pub(crate) fn db(&self) -> &$db {
+                &self.inner.borrow_owner().db().db
+            }
+
+            pub(super) fn try_new(env: Env<$name>, name: String) -> Result<Self> {
+                let inner = $col_inner::try_new(env, |env| {
+                    let handle = if let Some(handle) = env.db().db.cf_handle(&name) {
+                        handle
+                    } else {
+                        let cf_opts = rocksdb::Options::default();
+                        env.db().db.create_cf(name.clone(), &cf_opts)?;
+                        env.db()
+                            .db
+                            .cf_handle(&name)
+                            .ok_or(Error::DatabaseNotFound {
+                                db: name.to_string(),
+                            })?
+                    };
+
+                    Ok::<BoundCFHandle<'_>, Error>(BoundCFHandle(handle))
+                })?;
+
+                Ok(Self { name, inner })
+            }
+        }
+    };
+}
+
 macro_rules! implement_backend {
     ($name:ident, $col:ident, $db:ident) => {
         impl DatabaseBackend for $name {
-            type Column<'c> = $col<'c> where Self: 'c;
-            fn create_or_open<'c>(&'c self, name: &str) -> super::Result<Self::Column<'c>> {
-                if let Some(handle) = self.db.cf_handle(name) {
-                    return Ok($col::new(name.to_owned(), self, handle));
-                };
-
-                let cf_opts = rocksdb::Options::default();
-                self.db.create_cf(name, &cf_opts)?;
-                let handle = self.db.cf_handle(name).ok_or(Error::DatabaseNotFound {
-                    db: name.to_string(),
-                })?;
-
-                Ok($col::new(name.to_owned(), self, handle))
+            type Column = $col;
+            fn create_or_open(env: Env<$name>, name: &str) -> super::Result<Self::Column> {
+                $col::try_new(env, name.to_owned())
             }
         }
 
@@ -159,14 +182,28 @@ macro_rules! implement_backend {
     };
 }
 
-implement_column!(RocksDbOptimisticColumn);
-implement_column!(RocksDbPessimisticColumn);
-implement_column!(RocksDbColumn);
+implement_column_traits!(RocksDbColumn);
+implement_column!(RocksDb, RocksDbColumn, RocksDbColumnInner, DB);
+implement_backend!(RocksDb, RocksDbColumn, DB);
 
+implement_column_traits!(RocksDbOptimisticColumn);
 implement_backend!(
     RocksDbOptimistic,
     RocksDbOptimisticColumn,
     OptimisticTransactionDB
 );
+implement_column!(
+    RocksDbOptimistic,
+    RocksDbOptimisticColumn,
+    RocksDbOptimisticColumnInner,
+    OptimisticTransactionDB
+);
+
+implement_column_traits!(RocksDbPessimisticColumn);
 implement_backend!(RocksDbPessimistic, RocksDbPessimisticColumn, TransactionDB);
-implement_backend!(RocksDb, RocksDbColumn, DB);
+implement_column!(
+    RocksDbPessimistic,
+    RocksDbPessimisticColumn,
+    RocksDbPessimisticColumnInner,
+    TransactionDB
+);

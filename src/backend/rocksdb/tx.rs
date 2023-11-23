@@ -4,7 +4,7 @@ use rocksdb::{DBPinnableSlice, OptimisticTransactionDB, TransactionDB};
 
 use crate::{
     backend::{DBColumn, DBColumnRef, DBColumnTransaction, DBTransaction},
-    Innerable, Result,
+    Result,
 };
 
 use super::{RocksDbOptimisticColumn, RocksDbPessimisticColumn};
@@ -14,26 +14,26 @@ pub struct RocksDBTransaction<'a, DB> {
     tx: rocksdb::Transaction<'a, DB>,
 }
 
-impl<'a> DBColumnTransaction<'a> for RocksDbOptimisticColumn<'a> {
+impl<'a> DBColumnTransaction<'a> for RocksDbOptimisticColumn {
     type Txn = RocksDBTransaction<'a, OptimisticTransactionDB>;
 
-    fn transaction(&self) -> crate::Result<Self::Txn> {
-        let tx = self.env.db.transaction();
+    fn transaction(&'a self) -> crate::Result<Self::Txn> {
+        let tx = self.db().transaction();
         Ok(RocksDBTransaction {
             tx,
-            cf_handle: self.inner().clone(),
+            cf_handle: self.cf_handle().clone(),
         })
     }
 }
 
-impl<'a> DBColumnTransaction<'a> for RocksDbPessimisticColumn<'a> {
+impl<'a> DBColumnTransaction<'a> for RocksDbPessimisticColumn {
     type Txn = RocksDBTransaction<'a, TransactionDB>;
 
-    fn transaction(&self) -> crate::Result<Self::Txn> {
-        let tx = self.env.db.transaction();
+    fn transaction(&'a self) -> crate::Result<Self::Txn> {
+        let tx = self.db().transaction();
         Ok(RocksDBTransaction {
             tx,
-            cf_handle: self.inner().clone(),
+            cf_handle: self.cf_handle().clone(),
         })
     }
 }

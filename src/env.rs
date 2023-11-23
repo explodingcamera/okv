@@ -49,17 +49,18 @@ impl<'a, D: DatabaseBackend> Env<D> {
     /// let env = Env::new(backend);
     /// let mut db = env.open::<&str, &str>("test").unwrap();
     /// ```
-    pub fn open<K, V>(&'a self, name: &str) -> Result<Database<'a, K, V, D>> {
-        Database::new(self, name)
+    pub fn open<K, V>(&'a self, name: &str) -> Result<Database<K, V, D>> {
+        Database::new(self.clone(), name)
     }
 
+    // TODO: Is this useful now that Database doesn't have a lifetime?
     /// Same as [`Env::open`] but you can specify the type of the key and value using a tuple.
     /// This is useful when you want to reuse the same type for multiple databases.
     pub fn open_tupel<T: DatabaseType>(
         &'a self,
         name: &str,
-    ) -> Result<Database<'a, T::Key, T::Val, D>> {
-        Database::new(self, name)
+    ) -> Result<Database<T::Key, T::Val, D>> {
+        Database::new(self.clone(), name)
     }
 
     // TODO: Is this useful now that RocksDB is Sync?

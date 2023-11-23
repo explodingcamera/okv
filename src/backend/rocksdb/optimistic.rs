@@ -1,10 +1,7 @@
-use std::sync::Arc;
-
 use super::{BoundCFHandle, RocksDbImpl};
-use crate::{
-    Result, {Flushable, Innerable},
-};
+use crate::{Env, Flushable, Result};
 use inherent::inherent;
+use self_cell::self_cell;
 
 /// A RocksDB database backend with optimistic transactions.
 pub struct RocksDbOptimistic {
@@ -19,33 +16,20 @@ impl Flushable for RocksDbOptimistic {
 }
 
 /// A RocksDB database column family.
-pub struct RocksDbOptimisticColumn<'a> {
+pub struct RocksDbOptimisticColumn {
     pub(crate) name: String,
-    pub(crate) env: &'a RocksDbOptimistic,
-    cf_handle: BoundCFHandle<'a>,
+    pub(crate) inner: RocksDbOptimisticColumnInner,
 }
 
-impl<'a> RocksDbOptimisticColumn<'a> {
-    pub(super) fn new(
-        name: String,
-        env: &'a RocksDbOptimistic,
-        cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
-    ) -> Self {
-        Self {
-            name,
-            env,
-            cf_handle: BoundCFHandle(cf_handle),
-        }
+self_cell!(
+    /// A RocksDB database column family.
+    pub(crate) struct RocksDbOptimisticColumnInner {
+        owner: Env<RocksDbOptimistic>,
+
+        #[covariant]
+        dependent: BoundCFHandle,
     }
-}
-
-impl<'a> Innerable for RocksDbOptimisticColumn<'a> {
-    type Inner = Arc<rocksdb::BoundColumnFamily<'a>>;
-
-    fn inner(&self) -> &Self::Inner {
-        self.cf_handle.inner()
-    }
-}
+);
 
 #[inherent]
 impl RocksDbImpl for RocksDbOptimistic {

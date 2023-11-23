@@ -8,10 +8,10 @@ use std::sync::Arc;
 
 /// A collection of key-value pairs
 /// Can be cloned but not shared across threads.
-pub struct Database<'a, K, V, D: DatabaseBackend>(Arc<DatabaseInner<'a, K, V, D>>);
-impl<'a, K, V, D: DatabaseBackend> Database<'a, K, V, D> {
-    pub(crate) fn new(env: &'a Env<D>, name: &str) -> Result<Self> {
-        let column = env.db().create_or_open(name)?;
+pub struct Database<K, V, D: DatabaseBackend>(Arc<DatabaseInner<K, V, D>>);
+impl<K, V, D: DatabaseBackend> Database<K, V, D> {
+    pub(crate) fn new(env: Env<D>, name: &str) -> Result<Self> {
+        let column = D::create_or_open(env, name)?;
         Ok(Database(Arc::new(DatabaseInner {
             name: name.to_string(),
             column,
@@ -25,18 +25,18 @@ impl<'a, K, V, D: DatabaseBackend> Database<'a, K, V, D> {
     }
 }
 
-struct DatabaseInner<'a, K, V, D>
+struct DatabaseInner<K, V, D>
 where
-    D: DatabaseBackend + 'a,
+    D: DatabaseBackend,
 {
     name: String,
-    column: D::Column<'a>,
+    column: D::Column,
     _phantom: PhantomData<(K, V)>,
 }
 
 // All databases
 #[inherent]
-impl<'a, Key, Val, D> crate::traits::DBCommon<Key, Val> for Database<'a, Key, Val, D>
+impl<Key, Val, D> crate::traits::DBCommon<Key, Val> for Database<Key, Val, D>
 where
     D: DatabaseBackend,
 {
@@ -106,10 +106,10 @@ where
 }
 
 #[inherent]
-impl<'a, Key, Val, D, C> crate::DBCommonClear for Database<'a, Key, Val, D>
+impl<Key, Val, D, C> crate::DBCommonClear for Database<Key, Val, D>
 where
     C: DBColumnClear,
-    D: DatabaseBackend<Column<'a> = C> + 'a,
+    D: DatabaseBackend<Column = C>,
 {
     /// Clear the database, removing all key-value pairs.
     pub fn clear(&self) -> Result<()> {
@@ -119,10 +119,10 @@ where
 }
 
 #[inherent]
-impl<'a, Key, Val, D, C> crate::DBCommonDelete for Database<'a, Key, Val, D>
+impl<Key, Val, D, C> crate::DBCommonDelete for Database<Key, Val, D>
 where
     C: DBColumnDelete,
-    D: DatabaseBackend<Column<'a> = C> + 'a,
+    D: DatabaseBackend<Column = C>,
 {
     /// Delete the database. Note that this will delete all data in the database.
     /// After calling this method, the database should not be used anymore or it
@@ -134,10 +134,10 @@ where
 }
 
 #[inherent]
-impl<'a, Key, Val, D, C> crate::DBCommonRef<'a, Key, Val, C::Ref> for Database<'a, Key, Val, D>
+impl<'a, Key, Val, D, C> crate::DBCommonRef<'a, Key, Val, C::Ref> for Database<Key, Val, D>
 where
     C: DBColumnRef<'a> + 'a,
-    D: DatabaseBackend<Column<'a> = C>,
+    D: DatabaseBackend<Column = C>,
 {
     /// Get the serialized `val` from the database by `key`.
     ///
@@ -165,16 +165,19 @@ where
 }
 
 #[inherent]
-impl<'a, Key, Val, D, C> crate::DBCommonRefBatch<'a, Key, Val, C::Ref> for Database<'a, Key, Val, D>
+impl<'a, Key, Val, D, C> crate::DBCommonRefBatch<'a, Key, Val, C::Ref> for Database<Key, Val, D>
 where
-    C: DBColumnRefBatch<'a>,
-    D: DatabaseBackend<Column<'a> = C>,
+    C: DBColumnRefBatch<'a> + 'a,
+    D: DatabaseBackend<Column = C>,
 {
     /// Get the serialized `val` from the database by `key`.
     ///
     /// See [`get_multi_ref`](crate::DBCommonRefBatch::get_multi_ref) for more information.
-    #[allow(clippy::type_complexity)] // trait associated types are not stable yet
-    pub fn get_multi_ref<'k, I>(&self, keys: I) -> Result<Vec<Option<RefValue<C::Ref, Val::DItem>>>>
+    #[allow(clippy::type_complexity)] // this isn't that complex
+    pub fn get_multi_ref<'k, I>(
+        &'a self,
+        keys: I,
+    ) -> Result<Vec<Option<RefValue<C::Ref, Val::DItem>>>>
     where
         Key: BytesEncode<'k>,
         I: IntoIterator<Item = &'k <Key>::EItem>,
@@ -197,13 +200,13 @@ where
 }
 
 // Databases that support transactions
-impl<'a, Key, Val, D, C> Database<'a, Key, Val, D>
+impl<'a, Key, Val, D, C> Database<Key, Val, D>
 where
-    C: DBColumnTransaction<'a>,
-    D: DatabaseBackend<Column<'a> = C>,
+    C: DBColumnTransaction<'a> + 'a,
+    D: DatabaseBackend<Column = C>,
 {
     /// Clear the database, removing all key-value pairs.
-    pub fn transaction(&self) -> Result<DatabaseTransaction<'a, Key, Val, C>> {
+    pub fn transaction(&'a self) -> Result<DatabaseTransaction<'a, Key, Val, C>> {
         Ok(DatabaseTransaction {
             column: self.0.column.transaction()?,
             _phantom: PhantomData,
@@ -212,10 +215,10 @@ where
 }
 
 // Databases that access to the underlying driver
-impl<'a, K, V, D, C> Database<'a, K, V, D>
+impl<'a, K, V, D, C> Database<K, V, D>
 where
     C: DBColumn + 'a + Innerable,
-    D: DatabaseBackend<Column<'a> = C> + Innerable,
+    D: DatabaseBackend<Column = C> + Innerable,
 {
     /// Returns a reference to the underlying column.
     /// Can be used to access the database directly.
@@ -224,7 +227,7 @@ where
     }
 }
 
-impl<'a, K, V, D> Clone for Database<'a, K, V, D>
+impl<K, V, D> Clone for Database<K, V, D>
 where
     D: DatabaseBackend,
 {
@@ -234,10 +237,10 @@ where
 }
 
 // Databases that support flushing
-impl<'a, K, V, D, C> Database<'a, K, V, D>
+impl<K, V, D, C> Database<K, V, D>
 where
     C: DBColumn + Flushable,
-    D: DatabaseBackend<Column<'a> = C>,
+    D: DatabaseBackend<Column = C>,
 {
     /// Returns a reference to the underlying column.
     /// Can be used to access the database directly.

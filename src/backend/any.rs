@@ -1,24 +1,24 @@
 // TODO: maybe use https://crates.io/crates/enum_dispatch instead of this?
 
 use super::{DBColumn, DBColumnClear, DatabaseBackend, Innerable};
-use crate::Result;
+use crate::{mem::MemDB, Env, Result};
 
 /// Any Database Backend
-pub enum AnyDatabaseBackend<'c> {
+pub enum AnyDatabaseBackend {
     #[cfg(feature = "memdb")]
     /// See [`MemDB`](super::mem::MemDB)
-    MemDB(super::mem::MemDB<'c>),
+    MemDB(super::mem::MemDB),
     #[cfg(feature = "rocksdb")]
     /// See [`RocksDb`](super::rocksdb::RocksDb)
     RocksDB(super::rocksdb::RocksDb),
 }
 
 /// Any Database Column
-pub enum AnyDatabaseBackendColumn<'c> {
+pub enum AnyDatabaseBackendColumn {
     #[cfg(feature = "memdb")]
-    MemDB(super::mem::MemDBColumn<'c>),
+    MemDB(super::mem::MemDBColumn),
     #[cfg(feature = "rocksdb")]
-    RocksDB(super::rocksdb::RocksDbColumn<'c>),
+    RocksDB(super::rocksdb::RocksDbColumn),
 }
 
 macro_rules! dispatch {
@@ -46,12 +46,12 @@ macro_rules! dispatch {
 /// (Requires `unstable_any` feature)
 pub struct AnyDatabase<'c> {
     marker: std::marker::PhantomData<&'c ()>,
-    backend: AnyDatabaseBackend<'c>,
+    backend: AnyDatabaseBackend,
 }
 
 impl<'c> AnyDatabase<'c> {
     /// Create a new AnyDatabase wrapper.
-    pub fn new(backend: AnyDatabaseBackend<'c>) -> Self {
+    pub fn new(backend: AnyDatabaseBackend) -> Self {
         Self {
             marker: std::marker::PhantomData,
             backend,
@@ -59,21 +59,21 @@ impl<'c> AnyDatabase<'c> {
     }
 }
 
-impl<'a> Innerable for AnyDatabase<'a> {
-    type Inner = AnyDatabaseBackend<'a>;
+impl Innerable for AnyDatabase {
+    type Inner = AnyDatabaseBackend;
     fn inner(&self) -> &Self::Inner {
         &self.backend
     }
 }
 
-impl<'a> DatabaseBackend for AnyDatabase<'a> {
-    type Column<'c> = AnyDatabaseColumn<'c> where Self: 'c;
+impl DatabaseBackend for AnyDatabase {
+    type Column = AnyDatabaseColumn;
 
-    fn create_or_open<'c>(&'c self, name: &str) -> Result<Self::Column<'c>> {
-        let res = match self.backend {
+    fn create_or_open(env: Env<AnyDatabase>, name: &str) -> Result<Self::Column> {
+        let res = match env.db().backend {
             #[cfg(feature = "memdb")]
             AnyDatabaseBackend::MemDB(ref db) => {
-                AnyDatabaseBackendColumn::MemDB(db.create_or_open(name)?)
+                AnyDatabaseBackendColumn::MemDB(MemDB::create_or_open(env, name)?)
             }
             #[cfg(feature = "rocksdb")]
             AnyDatabaseBackend::RocksDB(ref db) => {
@@ -81,26 +81,22 @@ impl<'a> DatabaseBackend for AnyDatabase<'a> {
             }
         };
 
-        Ok(AnyDatabaseColumn {
-            marker: std::marker::PhantomData,
-            column: res,
-        })
+        Ok(AnyDatabaseColumn { column: res })
     }
 }
 
-pub struct AnyDatabaseColumn<'c> {
-    marker: std::marker::PhantomData<&'c ()>,
-    column: AnyDatabaseBackendColumn<'c>,
+pub struct AnyDatabaseColumn {
+    column: AnyDatabaseBackendColumn,
 }
 
-impl<'a> Innerable for AnyDatabaseColumn<'a> {
-    type Inner = AnyDatabaseBackendColumn<'a>;
+impl Innerable for AnyDatabaseColumn {
+    type Inner = AnyDatabaseBackendColumn;
     fn inner(&self) -> &Self::Inner {
         &self.column
     }
 }
 
-impl<'a> DBColumn for AnyDatabaseColumn<'a> {
+impl DBColumn for AnyDatabaseColumn {
     fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
         dispatch!(self, set, key, val)
     }
@@ -126,7 +122,7 @@ impl<'a> DBColumn for AnyDatabaseColumn<'a> {
     }
 }
 
-impl<'a> DBColumnClear for AnyDatabaseColumn<'a> {
+impl DBColumnClear for AnyDatabaseColumn {
     fn clear(&self) -> Result<()> {
         match self.column {
             #[cfg(feature = "memdb")]
