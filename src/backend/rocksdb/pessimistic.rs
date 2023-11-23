@@ -1,8 +1,7 @@
-use std::sync::Arc;
-
 use super::{BoundCFHandle, RocksDbImpl};
-use crate::{Innerable, Result};
+use crate::{Env, Innerable, Result};
 use inherent::inherent;
+use self_cell::self_cell;
 
 /// A RocksDB database backend with pessimistic transactions.
 pub struct RocksDbPessimistic {
@@ -10,30 +9,24 @@ pub struct RocksDbPessimistic {
 }
 
 /// A RocksDB database column family.
-pub struct RocksDbPessimisticColumn<'a> {
+pub struct RocksDbPessimisticColumn {
     pub(crate) name: String,
-    pub(crate) env: &'a RocksDbPessimistic,
-    cf_handle: BoundCFHandle<'a>,
+    pub(super) inner: RocksDbPessimisticColumnInner,
 }
 
-impl<'a> RocksDbPessimisticColumn<'a> {
-    pub(super) fn new(
-        name: String,
-        env: &'a RocksDbPessimistic,
-        cf_handle: Arc<rocksdb::BoundColumnFamily<'a>>,
-    ) -> Self {
-        Self {
-            name,
-            env,
-            cf_handle: BoundCFHandle(cf_handle),
-        }
+self_cell!(
+    pub struct RocksDbPessimisticColumnInner {
+        owner: Env<RocksDbPessimistic>,
+
+        #[covariant]
+        dependent: BoundCFHandle,
     }
-}
+);
 
-impl<'a> Innerable for RocksDbPessimisticColumn<'a> {
-    type Inner = Arc<rocksdb::BoundColumnFamily<'a>>;
+impl Innerable for RocksDbPessimisticColumn {
+    type Inner = RocksDbPessimisticColumnInner;
     fn inner(&self) -> &Self::Inner {
-        self.cf_handle.inner()
+        &self.inner
     }
 }
 

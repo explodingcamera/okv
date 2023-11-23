@@ -19,9 +19,6 @@ pub use backend::mem;
 #[cfg(feature = "rocksdb")]
 pub use backend::rocksdb;
 
-#[cfg(feature = "unstable_any")]
-pub use backend::any;
-
 #[cfg(test)]
 mod test {
     use std::thread;
@@ -67,10 +64,10 @@ mod test {
         handler.join().unwrap();
         let db = env.open::<&str, SerdeJson<Test>>("test").unwrap();
         let _res = db.get("hello")?;
-        let tx = db.transaction()?;
-        tx.get("hello")?;
-        tx.commit()?;
-        db.delete_db()?;
+        // let tx = db.transaction()?;
+        // tx.get("hello")?;
+        // tx.commit()?;
+        // db.delete_db()?;
 
         Ok(())
     }

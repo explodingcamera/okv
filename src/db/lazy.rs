@@ -19,6 +19,6 @@ impl<K, V, D: DatabaseBackend> DatabaseLazy<K, V, D> {
     }
 
     pub fn open(&self) -> Result<Database<K, V, D>> {
-        Database::new(&self.env, &self.name)
+        Database::new(self.env.clone(), &self.name)
     }
 }
