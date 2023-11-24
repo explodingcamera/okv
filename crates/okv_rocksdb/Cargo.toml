@@ -10,7 +10,7 @@ authors.workspace=true
 repository.workspace=true
 
 [dependencies]
-okv_core={version="0.3", path="../okv_core"}
+okv_core={version="0.3.0", path="../okv_core"}
 rocksdb={version="0.21.0", default-features=false, features=["multi-threaded-cf"]}
 inherent="1.0"
 self_cell="1.0"

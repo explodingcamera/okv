@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 //! OKV - Okay Key-Value Storage
 #![doc(test(
     no_crate_inject,
@@ -32,8 +34,8 @@ pub use okv_core::types;
 pub mod backend {
     //! Database backends
     //!
-    //! * [`memory`] - In-memory database backend (requires `memory` feature)
-    //! * [`rocksdb`] - RocksDB database backend (requires `rocksdb` feature). Based on <https://crates.io/crates/rocksdb>.
+    //! * [`rocksdb`] - In-memory database backend (requires `memory` feature)
+    //! * [`memory`] - RocksDB database backend (requires `rocksdb` feature). Based on <https://crates.io/crates/rocksdb>.
     // //! * [`sqlite`] - Sqlite database backend (requires `sqlite` feature). Based on <https://crates.io/crates/rusqlite>.
 
     #[cfg(feature = "rocksdb")]

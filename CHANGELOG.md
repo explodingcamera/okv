@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## v0.3.0 - 2023-11-24
 
 * Move database backends to their own crates
 * Add examples
+
+Full Changelog: https://github.com/explodingcamera/okv/commits/v0.3.0
 
 ## v0.2.0 - 2023-11-23
 

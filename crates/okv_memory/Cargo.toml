@@ -10,7 +10,7 @@ authors.workspace=true
 repository.workspace=true
 
 [dependencies]
-okv_core={version="0.3", path="../okv_core"}
+okv_core={version="0.3.0", path="../okv_core"}
 dashmap={version="5.5"}
 self_cell="1.0"
 

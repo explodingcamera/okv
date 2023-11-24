@@ -8,9 +8,10 @@ categories=["database", "concurrency", "api-bindings"]
 license.workspace=true
 authors.workspace=true
 repository.workspace=true
+publish=false
 
 [dependencies]
-okv_core={version="0.3", path="../okv_core"}
+okv_core={version="0.3.0", path="../okv_core"}
 
 [features]
 multi_threaded=[]

@@ -20,9 +20,9 @@ repository.workspace=true
 
 [dependencies]
 okv_core={path="crates/okv_core"}
-okv_sqlite={version="0.3", path="crates/okv_sqlite", optional=true}
-okv_rocksdb={version="0.3", path="crates/okv_rocksdb", optional=true}
-okv_memory={version="0.3", path="crates/okv_memory", optional=true}
+okv_sqlite={version="0.3.0", path="crates/okv_sqlite", optional=true}
+okv_rocksdb={version="0.3.0", path="crates/okv_rocksdb", optional=true}
+okv_memory={version="0.3.0", path="crates/okv_memory", optional=true}
 
 [dev-dependencies]
 eyre="0.6"
@@ -33,7 +33,7 @@ all-features=true
 default-target="x86_64-unknown-linux-gnu"
 
 [features]
-default=["okv_memory"]
+default=["memory"]
 
 # serialization
 serde=["okv_core/serde"]
@@ -50,7 +50,7 @@ uuid=["okv_core/uuid"]
 # ]
 
 # storage engines
-sqlite=["okv_sqlite"]
+# sqlite=["okv_sqlite"]
 rocksdb=["okv_rocksdb"]
 memory=["okv_memory"]
 

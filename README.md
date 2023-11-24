@@ -25,33 +25,20 @@ cargo add okv
 # Quick Start
 
 ```rust
-use okv::{Env, Result};
-use okv::mem::MemDB;
-use okv::types::serde::SerdeJson;
+use okv::{Env};
+use okv::backend::memory::MemDB;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq)]
-struct Test {
-    name: String,
-    age: u32,
-}
+fn main() -> eyre::Result<()> {
+    // initialize the storage backend
+    let memdb = MemDB::new();
+    let env = Env::new(memdb);
 
-fn main() -> Result<()> {
-    // Initialize storage backend
-    let mut storage = MemDB::new();
-    let env = Env::new(storage);
-
-    // Open a database with specified serializers
-    let mut db = env.open::<&str, SerdeJson<Test>>("my_database")?;
-//  let mut db = env.open::<&str, SerdeRmp<Test>>("my_database")?;
-//  let mut db = env.open::<&str, &[u8]>("my_database")?;
+    // open a database with the specified key and value types
+    let db = env.open::<&str, &str>("my_database")?;
 
     // Working with data
-    let test = Test { name: "John".to_string(), age: 32 };
-    db.set("test", &test)?;
-    let result = db.get("test")?;
-
-    // Verify the operation
-    assert_eq!(result, Some(test));
+    db.set_nx("key", "val")?;
+    assert_eq!(db.get("key")?, Some("val".to_string()));
 
     Ok(())
 }
