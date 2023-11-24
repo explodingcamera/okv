@@ -1,5 +1,4 @@
 [workspace.package]
-version="0.3.0"
 edition="2021"
 description="A versatile key-value storage library"
 license="MIT OR Apache-2.0"
@@ -12,7 +11,7 @@ resolver="2"
 
 [package]
 name="okv"
-version.workspace=true
+version="0.3.0"
 edition.workspace=true
 description="A versatile key-value storage library"
 license.workspace=true

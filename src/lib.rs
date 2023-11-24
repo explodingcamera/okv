@@ -33,13 +33,12 @@ pub mod backend {
     #[doc(inline)]
     pub use okv_rocksdb as rocksdb;
 
-    // TODO
     #[cfg(feature = "memory")]
     #[doc(inline)]
     pub use okv_memory as memory;
 
     // TODO
-    #[cfg(feature = "sqlite")]
-    #[doc(inline)]
-    pub use okv_sqlite as sqlite;
+    // #[cfg(feature = "sqlite")]
+    // #[doc(inline)]
+    // pub use okv_sqlite as sqlite;
 }
