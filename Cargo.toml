@@ -19,8 +19,8 @@ authors.workspace=true
 repository.workspace=true
 
 [dependencies]
-okv_core={path="crates/okv_core"}
-okv_sqlite={version="0.3.0", path="crates/okv_sqlite", optional=true}
+okv_core={version="0.3.0", path="crates/okv_core"}
+# okv_sqlite={version="0.3.0", path="crates/okv_sqlite", optional=true}
 okv_rocksdb={version="0.3.0", path="crates/okv_rocksdb", optional=true}
 okv_memory={version="0.3.0", path="crates/okv_memory", optional=true}
 
