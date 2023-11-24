@@ -2,6 +2,7 @@ use crate::{backend::*, error::Result, traits::*};
 use inherent::inherent;
 use std::marker::PhantomData;
 
+/// A temporary transaction database
 pub struct DatabaseTransaction<'a, K, V, C>
 where
     C: DBColumnTransaction<'a>,

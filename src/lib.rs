@@ -17,17 +17,24 @@
 pub use okv_core::db::Database;
 
 #[doc(inline)]
+pub use okv_core::db::DatabaseTransaction;
+
+#[doc(inline)]
 pub use okv_core::env::Env;
 
 #[doc(inline)]
+pub use okv_core::error::{DecodeError, EncodeError, Error};
+
+#[doc(inline)]
+/// Serialization types
 pub use okv_core::types;
 
 pub mod backend {
-    //! Database Backends
+    //! Database backends
     //!
     //! * [`memory`] - In-memory database backend (requires `memory` feature)
-    //! * [`rocksdb`] - RocksDB database backend (requires `rocksdb` feature). Based on the `rocksdb` crate.
-    //! * [`sqlite`] - Sqlite database backend (requires `sqlite` feature). Based on the `rusqlite` crate.
+    //! * [`rocksdb`] - RocksDB database backend (requires `rocksdb` feature). Based on <https://crates.io/crates/rocksdb>.
+    // //! * [`sqlite`] - Sqlite database backend (requires `sqlite` feature). Based on <https://crates.io/crates/rusqlite>.
 
     #[cfg(feature = "rocksdb")]
     #[doc(inline)]
@@ -42,3 +49,9 @@ pub mod backend {
     // #[doc(inline)]
     // pub use okv_sqlite as sqlite;
 }
+
+#[doc(inline)]
+pub use okv_core::traits::{
+    DBCommon, DBCommonClear, DBCommonDelete, DBCommonIter, DBCommonIterPrefix, DBCommonRef,
+    DBCommonRefBatch,
+};

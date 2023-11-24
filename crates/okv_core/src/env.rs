@@ -2,7 +2,6 @@ use crate::{backend::DatabaseBackend, db::Database, error::Result};
 use std::sync::Arc;
 
 /// A database environment
-/// Can be cloned.
 pub struct Env<D: DatabaseBackend>(Arc<EnvInner<D>>);
 
 impl<D> Clone for Env<D>
@@ -39,7 +38,7 @@ impl<'a, D: DatabaseBackend> Env<D> {
     /// # Generic Arguments
     ///
     /// * `V` - The value type. This must implement [`crate::traits::BytesEncode`].
-    /// * `B` - The value type. This must implement [`crate::traits::BytesEncode`], [`crate::crate::traits::BytesDecode`] and [`crate::crate::traits::BytesDecodeOwned`].
+    /// * `B` - The value type. This must implement [`crate::traits::BytesEncode`], [`crate::traits::BytesDecode`] and [`crate::traits::BytesDecodeOwned`].
     ///
     /// # Examples
     ///

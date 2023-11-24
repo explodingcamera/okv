@@ -65,7 +65,7 @@ name="transactions"
 required-features=["rocksdb"]
 test=true
 
-[[serde_json]]
+[[example]]
 name="serde_json"
 required-features=["serde_json"]
 test=true

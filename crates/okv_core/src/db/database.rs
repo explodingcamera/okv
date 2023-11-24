@@ -8,7 +8,6 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 /// A collection of key-value pairs
-/// Can be cloned but not shared across threads.
 pub struct Database<K, V, D: DatabaseBackend>(Arc<DatabaseInner<K, V, D>>);
 impl<K, V, D: DatabaseBackend> Database<K, V, D> {
     pub(crate) fn new(env: Env<D>, name: &str) -> Result<Self> {
@@ -154,7 +153,7 @@ where
 {
     /// Get the serialized `val` from the database by `key`.
     ///
-    /// See [`get_ref`](crate::DBCommonRef::get_ref) for more information.
+    /// See [`get_ref`](crate::traits::DBCommonRef::get_ref) for more information.
     pub fn get_ref<'k>(
         &'a self,
         key: &'k Key::EItem,
@@ -185,7 +184,7 @@ where
 {
     /// Get the serialized `val` from the database by `key`.
     ///
-    /// See [`get_multi_ref`](crate::DBCommonRefBatch::get_multi_ref) for more information.
+    /// See [`get_multi_ref`](crate::traits::DBCommonRefBatch::get_multi_ref) for more information.
     #[allow(clippy::type_complexity)] // this isn't that complex
     pub fn get_multi_ref<'k, I>(
         &'a self,
