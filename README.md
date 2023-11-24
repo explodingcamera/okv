@@ -11,8 +11,8 @@ OKV is a versatile key-value storage library designed for Rust. It offers a simp
   - `rocksdb`: RocksDB integration for robust, disk-based storage.
   <!-- - `sqlite`: SQLite support for relational data storage. -->
 - **Serialization Formats**: 
-  - `serde-json`: JSON serialization for human-readable data storage.
-  - `serde-rmp`: MessagePack serialization for efficient binary format.
+  - `serde_json`: JSON serialization for human-readable data storage.
+  - `rmp-serde`: MessagePack serialization for efficient binary format.
 
 ## Installation
 
@@ -25,7 +25,7 @@ cargo add okv
 # Quick Start
 
 ```rust
-use okv::{Database, Env, Result};
+use okv::{Env, Result};
 use okv::mem::MemDB;
 use okv::types::serde::SerdeJson;
 

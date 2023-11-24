@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Move database backends to their own crates
+* Add examples
+
 ## v0.2.0 - 2023-11-23
 
 * Added `Database::set_nx` method for setting a value if it does not exist

@@ -1,0 +1,33 @@
+[package]
+name="okv_core"
+version.workspace=true
+edition.workspace=true
+description="A versatile key-value storage library"
+keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
+categories=["database", "concurrency", "api-bindings"]
+license.workspace=true
+authors.workspace=true
+repository.workspace=true
+
+[dependencies]
+thiserror="1.0"
+byteorder="1.5"
+inherent="1.0"
+anyhow="1"
+
+serde={version="1.0", optional=true, features=["derive"]}
+serde_json={version="1.0", optional=true}
+rmp-serde={version="1.1", optional=true}
+uuid={version="1", optional=true}
+
+[dev-dependencies]
+okv={path="../../", features=["memory"]}
+
+[features]
+default=["serde", "multi_threaded"]
+
+multi_threaded=[]
+serde=["dep:serde"]
+serde_json=["serde", "dep:serde_json"]
+rmp-serde=["serde", "dep:rmp-serde"]
+uuid=["dep:uuid"]

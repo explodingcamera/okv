@@ -1,0 +1,18 @@
+[package]
+name="okv_memory"
+version="0.3.0"
+edition.workspace=true
+description="A versatile key-value storage library"
+keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
+categories=["database", "concurrency", "api-bindings"]
+license.workspace=true
+authors.workspace=true
+repository.workspace=true
+
+[dependencies]
+okv_core={version="0.3", path="../okv_core"}
+dashmap={version="5.5"}
+self_cell="1.0"
+
+[features]
+multi_threaded=[]

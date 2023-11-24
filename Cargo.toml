@@ -1,44 +1,61 @@
-[package]
-name="okv"
-version="0.2.0"
+[workspace.package]
+version="0.3.0"
 edition="2021"
 description="A versatile key-value storage library"
-keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
-categories=["database", "concurrency", "api-bindings"]
 license="MIT OR Apache-2.0"
 authors=["Henry Gressmann <mail@henrygressmann.de>"]
 repository="https://github.com/explodingcamera/okv"
+
+[workspace]
+members=["crates/okv_core", "crates/okv_sqlite", "crates/okv_rocksdb", "crates/okv_memory"]
+resolver="2"
+
+[package]
+name="okv"
+version.workspace=true
+edition.workspace=true
+description="A versatile key-value storage library"
+license.workspace=true
+authors.workspace=true
+repository.workspace=true
+
+[dependencies]
+okv_core={path="crates/okv_core"}
+okv_sqlite={version="0.3", path="crates/okv_sqlite", optional=true}
+okv_rocksdb={version="0.3", path="crates/okv_rocksdb", optional=true}
+okv_memory={version="0.3", path="crates/okv_memory", optional=true}
+
+[dev-dependencies]
+eyre="0.6"
 
 [package.metadata.docs.rs]
 all-features=true
 default-target="x86_64-unknown-linux-gnu"
 
-[dependencies]
-byteorder="1.5"
-thiserror="1.0.50"
-inherent="1.0"
-self_cell="1.0"
-
-rocksdb={version="0.21.0", optional=true, default-features=false, features=["multi-threaded-cf"]}
-# rusqlite={version="0.30", optional=true}
-dashmap={version="5.5", optional=true}
-
-serde={version="1.0", optional=true, features=["derive"]}
-serde_json={version="1.0", optional=true}
-rmp-serde={version="1.1", optional=true}
-
-uuid={version="1", optional=true}
-
 [features]
-default=["rocksdb", "memdb", "serde", "serde-json", "serde-rmp"]
-rocksdb=["dep:rocksdb"]
-# sqlite=["dep:rusqlite"]
-memdb=["dep:dashmap"]
+default=["okv_memory"]
 
-serde=["dep:serde"]
-serde-json=["serde", "dep:serde_json"]
-serde-rmp=["serde", "dep:rmp-serde"]
-uuid=["dep:uuid"]
+# serialization
+serde=["okv_core/serde"]
+serde_json=["okv_core/serde_json"]
+rmp-serde=["okv_core/rmp-serde"]
+uuid=["okv_core/uuid"]
 
-unstable_any=[]
-unstable_lasydb=[]
+# TODO: optional multi-threading support
+# multi_threaded=[
+#     "okv_core/multi_threaded",
+#     "okv_sqlite?/multi_threaded",
+#     "okv_rocksdb?/multi_threaded",
+#     "okv_memory?/multi_threaded",
+# ]
+
+# storage engines
+sqlite=["okv_sqlite"]
+rocksdb=["okv_rocksdb"]
+memory=["okv_memory"]
+
+
+[[example]]
+name="simple"
+required-features=["rocksdb"]
+test=true

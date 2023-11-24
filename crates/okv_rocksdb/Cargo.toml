@@ -1,0 +1,19 @@
+[package]
+name="okv_rocksdb"
+version="0.3.0"
+edition.workspace=true
+description="A versatile key-value storage library"
+keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
+categories=["database", "concurrency", "api-bindings"]
+license.workspace=true
+authors.workspace=true
+repository.workspace=true
+
+[dependencies]
+okv_core={version="0.3", path="../okv_core"}
+rocksdb={version="0.21.0", default-features=false, features=["multi-threaded-cf"]}
+inherent="1.0"
+self_cell="1.0"
+
+[features]
+multi_threaded=["rocksdb/multi-threaded-cf"]
