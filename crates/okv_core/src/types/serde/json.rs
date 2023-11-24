@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{
+    error::{DecodeError, EncodeError},
     traits::{BytesDecode, BytesDecodeOwned, BytesEncode},
-    DecodeError, EncodeError,
 };
 
 /// Describes a type that is [`Serialize`]/[`Deserialize`] and uses `serde_json` to do so.

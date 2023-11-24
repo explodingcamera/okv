@@ -13,8 +13,14 @@
     unreachable_pub
 )]
 
+#[doc(inline)]
 pub use okv_core::db::Database;
+
+#[doc(inline)]
 pub use okv_core::env::Env;
+
+#[doc(inline)]
+pub use okv_core::types;
 
 pub mod backend {
     //! Database Backends

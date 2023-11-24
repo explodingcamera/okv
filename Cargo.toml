@@ -27,6 +27,7 @@ okv_memory={version="0.3", path="crates/okv_memory", optional=true}
 
 [dev-dependencies]
 eyre="0.6"
+serde="1"
 
 [package.metadata.docs.rs]
 all-features=true
@@ -58,4 +59,14 @@ memory=["okv_memory"]
 [[example]]
 name="simple"
 required-features=["rocksdb"]
+test=true
+
+[[example]]
+name="transactions"
+required-features=["rocksdb"]
+test=true
+
+[[serde_json]]
+name="serde_json"
+required-features=["serde_json"]
 test=true
