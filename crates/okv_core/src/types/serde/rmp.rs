@@ -41,6 +41,6 @@ where
     type DItem = T;
 
     fn bytes_decode_owned(bytes: &[u8]) -> Result<Self::DItem, DecodeError> {
-        serde_json::from_slice(bytes).map_err(Into::into)
+        rmp_serde::from_slice(bytes).map_err(Into::into)
     }
 }

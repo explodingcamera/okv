@@ -13,7 +13,6 @@ repository.workspace=true
 thiserror="1.0"
 byteorder="1.5"
 inherent="1.0"
-anyhow="1"
 
 serde={version="1.0", optional=true, features=["derive"]}
 serde_json={version="1.0", optional=true}
@@ -24,7 +23,7 @@ uuid={version="1", optional=true}
 okv={path="../../", features=["memory"]}
 
 [features]
-default=["serde", "multi_threaded"]
+default=["multi_threaded"]
 
 multi_threaded=[]
 serde=["dep:serde"]
