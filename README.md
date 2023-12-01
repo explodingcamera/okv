@@ -1,5 +1,8 @@
-# OKV - Okay Key-Value Storage
-
+<div>
+  <img align="left" src="./okv.png" width="100px">
+  <h1>OKV: Okay Key-Value Storage</h1>
+</div>
+ 
 [![docs.rs](https://img.shields.io/docsrs/okv?logo=rust)](https://docs.rs/okv) [![Crates.io](https://img.shields.io/crates/v/okv.svg?logo=rust)](https://crates.io/crates/okv) [![Crates.io](https://img.shields.io/crates/l/okv.svg)](./LICENSE-APACHE) 
 
 OKV is a versatile key-value storage library designed for Rust. It offers a simple yet powerful API, inspired by the [heed](https://github.com/meilisearch/heed) crate, and supports various databases and serialization formats.
