@@ -1,0 +1,19 @@
+[package]
+name="okv_redb"
+version="0.3.0"
+edition.workspace=true
+description="A versatile key-value storage library"
+keywords=["key-value", "database", "serde", "redb"]
+categories=["database", "concurrency", "api-bindings"]
+license.workspace=true
+authors.workspace=true
+repository.workspace=true
+publish=false
+
+[dependencies]
+okv_core={version="0.3.0", path="../okv_core"}
+redb="1.4.0"
+self_cell="1.0"
+
+[features]
+multi_threaded=[]
