@@ -73,10 +73,10 @@ pub trait DBColumnRefBatch<'c>: DBColumn {
     type Ref: AsRef<[u8]> + 'c + std::ops::Deref<Target = [u8]> + Send + Sync;
 
     /// Get a value by key in batch.
-    fn get_multi_ref<I>(&'c self, keys: I) -> Result<Vec<Option<Self::Ref>>>
+    fn get_multi_ref<'a, K, I>(&'c self, keys: I) -> Result<Vec<Option<Self::Ref>>>
     where
-        I: IntoIterator,
-        I::Item: AsRef<[u8]>;
+        K: AsRef<[u8]> + 'a + ?Sized,
+        I: IntoIterator<Item = &'a K>;
 }
 
 /// Database transaction trait that returns references.

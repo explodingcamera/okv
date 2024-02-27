@@ -4,10 +4,7 @@ use std::sync::Arc;
 /// A database environment
 pub struct Env<D: DatabaseBackend>(Arc<EnvInner<D>>);
 
-impl<D> Clone for Env<D>
-where
-    D: DatabaseBackend,
-{
+impl<D: DatabaseBackend> Clone for Env<D> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }

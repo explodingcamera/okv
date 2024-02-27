@@ -36,10 +36,7 @@ where
 
 // All databases
 #[inherent]
-impl<Key, Val, D> crate::traits::DBCommon<Key, Val> for Database<Key, Val, D>
-where
-    D: DatabaseBackend,
-{
+impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Database<Key, Val, D> {
     /// Get the value from the database by `key`.
     pub fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
         let res = self.0.column.get(key)?;
@@ -118,9 +115,8 @@ where
 }
 
 #[inherent]
-impl<Key, Val, D, C> DBCommonClear for Database<Key, Val, D>
+impl<Key, Val, D, C: DBColumnClear> DBCommonClear for Database<Key, Val, D>
 where
-    C: DBColumnClear,
     D: DatabaseBackend<Column = C>,
 {
     /// Clear the database, removing all key-value pairs.
@@ -131,9 +127,8 @@ where
 }
 
 #[inherent]
-impl<Key, Val, D, C> DBCommonDelete for Database<Key, Val, D>
+impl<Key, Val, D, C: DBColumnDelete> DBCommonDelete for Database<Key, Val, D>
 where
-    C: DBColumnDelete,
     D: DatabaseBackend<Column = C>,
 {
     /// Delete the database. Note that this will delete all data in the database.
@@ -192,12 +187,12 @@ where
     ) -> Result<Vec<Option<RefValue<C::Ref, Val::DItem>>>>
     where
         Key: BytesEncode<'k>,
-        I: IntoIterator<Item = &'k <Key>::EItem>,
         Val: BytesDecode<'a>,
+        I: IntoIterator<Item = &'k <Key>::EItem>,
     {
         let decoded_keys: Result<Vec<_>, _> =
             keys.into_iter().map(|key| Key::bytes_encode(key)).collect();
-        let res = self.0.column.get_multi_ref(decoded_keys?)?;
+        let res = self.0.column.get_multi_ref(&decoded_keys?)?;
         let wrapped_res = res
             .into_iter()
             .map(|val| {
@@ -227,9 +222,8 @@ where
 }
 
 // Databases that access to the underlying driver
-impl<'a, K, V, D, C> Database<K, V, D>
+impl<'a, K, V, D, C: DBColumn + 'a + Innerable> Database<K, V, D>
 where
-    C: DBColumn + 'a + Innerable,
     D: DatabaseBackend<Column = C> + Innerable,
 {
     /// Returns a reference to the underlying column.
@@ -249,9 +243,8 @@ where
 }
 
 // Databases that support flushing
-impl<K, V, D, C> Database<K, V, D>
+impl<K, V, D, C: DBColumn + Flushable> Database<K, V, D>
 where
-    C: DBColumn + Flushable,
     D: DatabaseBackend<Column = C>,
 {
     /// Returns a reference to the underlying column.

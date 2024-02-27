@@ -61,10 +61,10 @@ impl RocksDbImpl for RocksDb {
 impl<'c> DBColumnRefBatch<'c> for RocksDbColumn {
     type Ref = DBPinnableSlice<'c>;
 
-    fn get_multi_ref<I>(&'c self, keys: I) -> Result<Vec<Option<Self::Ref>>>
+    fn get_multi_ref<'a, K, I>(&'c self, keys: I) -> Result<Vec<Option<Self::Ref>>>
     where
-        I: IntoIterator,
-        I::Item: AsRef<[u8]>,
+        K: AsRef<[u8]> + 'a + ?Sized,
+        I: IntoIterator<Item = &'a K>,
     {
         let values = self
             .db()
