@@ -3,8 +3,12 @@ use okv_core::{
     error::{Error, Result},
     traits::Innerable,
 };
+
+pub use redb;
 use redb::{Database, ReadableTable, TableDefinition};
 use self_cell::self_cell;
+
+mod tx;
 
 pub(crate) fn okv_err(e: impl Into<redb::Error>) -> Error {
     Error::DatabaseBackend(Box::new(e.into()))
@@ -34,7 +38,7 @@ pub struct RedbColumn {
 }
 
 impl RedbColumn {
-    fn redb(&self) -> &Database {
+    fn db(&self) -> &Database {
         self.env.inner()
     }
 
@@ -45,14 +49,14 @@ impl RedbColumn {
 
 impl DBColumn for RedbColumn {
     fn contains(&self, key: impl AsRef<[u8]>) -> okv_core::error::Result<bool> {
-        let tx = self.redb().begin_read().map_err(okv_err)?;
+        let tx = self.db().begin_read().map_err(okv_err)?;
         let table = tx.open_table(self.table()).map_err(okv_err)?;
         let res = table.get(key.as_ref()).map_err(okv_err)?;
         Ok(res.is_some())
     }
 
     fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
-        let tx = self.redb().begin_write().map_err(okv_err)?;
+        let tx = self.db().begin_write().map_err(okv_err)?;
 
         {
             let mut table = tx.open_table(self.table()).map_err(okv_err)?;
@@ -64,7 +68,7 @@ impl DBColumn for RedbColumn {
     }
 
     fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
-        let tx = self.redb().begin_read().map_err(okv_err)?;
+        let tx = self.db().begin_read().map_err(okv_err)?;
         let table = tx.open_table(self.table()).map_err(okv_err)?;
         let res = table.get(key.as_ref()).map_err(okv_err)?;
         Ok(res.map(|v| v.value().to_vec()))
@@ -76,7 +80,7 @@ impl DBColumn for RedbColumn {
         I::Item: AsRef<[u8]>,
     {
         let mut res = Vec::new();
-        let tx = self.redb().begin_read().map_err(okv_err)?;
+        let tx = self.db().begin_read().map_err(okv_err)?;
         let table = tx.open_table(self.table()).map_err(okv_err)?;
         for key in keys {
             let val = table.get(key.as_ref()).map_err(okv_err)?;
@@ -87,7 +91,7 @@ impl DBColumn for RedbColumn {
     }
 
     fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
-        let tx = self.redb().begin_write().map_err(okv_err)?;
+        let tx = self.db().begin_write().map_err(okv_err)?;
 
         {
             let mut table = tx.open_table(self.table()).map_err(okv_err)?;
@@ -99,7 +103,7 @@ impl DBColumn for RedbColumn {
     }
 
     fn set_nx(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<bool> {
-        let tx = self.redb().begin_write().map_err(okv_err)?;
+        let tx = self.db().begin_write().map_err(okv_err)?;
 
         {
             let mut table = tx.open_table(self.table()).map_err(okv_err)?;
