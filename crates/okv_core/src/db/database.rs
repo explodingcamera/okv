@@ -8,30 +8,36 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 /// A collection of key-value pairs
-pub struct Database<K, V, D: DatabaseBackend>(Arc<DatabaseInner<K, V, D>>);
+#[derive(Clone)]
+pub struct Database<K, V, D: DatabaseBackend> {
+    name: String,
+    column: Arc<D::Column>,
+    marker: PhantomData<(K, V)>,
+}
+
 impl<K, V, D: DatabaseBackend> Database<K, V, D> {
     pub(crate) fn new(env: Env<D>, name: &str) -> Result<Self> {
         let column = D::create_or_open(env, name)?;
-        Ok(Database(Arc::new(DatabaseInner {
+        Ok(Self {
             name: name.to_string(),
-            column,
-            _phantom: PhantomData,
-        })))
+            column: Arc::new(column),
+            marker: PhantomData,
+        })
     }
 
     /// Returns the name of the database.
     pub fn name(&self) -> &str {
-        &self.0.name
+        &self.name
     }
-}
 
-struct DatabaseInner<K, V, D>
-where
-    D: DatabaseBackend,
-{
-    name: String,
-    column: D::Column,
-    _phantom: PhantomData<(K, V)>,
+    /// Returns a new atomic reference to the database with different types.
+    pub fn as_type<K2, V2>(self) -> Database<K2, V2, D> {
+        Database {
+            name: self.name,
+            column: self.column,
+            marker: PhantomData,
+        }
+    }
 }
 
 // All databases
@@ -39,14 +45,12 @@ where
 impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Database<Key, Val, D> {
     /// Get the value from the database by `key`.
     pub fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
-        let res = self.0.column.get(key)?;
-        Ok(res)
+        self.column.get(key)
     }
 
     /// Set a `key` to a value in the database.
     pub fn set_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<()> {
-        self.0.column.set(key, val)?;
-        Ok(())
+        self.column.set(key, val)
     }
 
     /// Get the serialized `val` from the database by `key`.
@@ -63,8 +67,7 @@ impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Databas
 
     /// Set a `key` to a value in the database if the key does not exist.
     pub fn set_nx_raw<'v>(&'v self, key: impl AsRef<[u8]>, val: &'v [u8]) -> Result<bool> {
-        let res = self.0.column.set_nx(key, val)?;
-        Ok(res)
+        self.column.set_nx(key, val)
     }
 
     /// Set a `key` to a serialized value in the database if the key does not exist.
@@ -78,9 +81,7 @@ impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Databas
     where
         Key: BytesEncode<'k>,
     {
-        let key_bytes = Key::bytes_encode(key)?;
-        self.0.column.delete(key_bytes)?;
-        Ok(())
+        self.column.delete(Key::bytes_encode(key)?)
     }
 
     /// Get values from the database by `keys`.
@@ -88,12 +89,9 @@ impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Databas
     where
         I: IntoIterator<Item = IV>,
     {
-        let mut res = Vec::new();
-        for key in keys {
-            let val = self.0.column.get(key)?;
-            res.push(val);
-        }
-        Ok(res)
+        keys.into_iter()
+            .map(|key| self.column.get(key.as_ref()))
+            .collect()
     }
 
     /// Get the serialized `val` from the database by `keys`.
@@ -108,9 +106,7 @@ impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Databas
     where
         Key: BytesEncode<'k>,
     {
-        let key_bytes = Key::bytes_encode(key)?;
-        let res = self.0.column.contains(key_bytes)?;
-        Ok(res)
+        self.column.contains(Key::bytes_encode(key)?)
     }
 }
 
@@ -121,8 +117,7 @@ where
 {
     /// Clear the database, removing all key-value pairs.
     pub fn clear(&self) -> Result<()> {
-        self.0.column.clear()?;
-        Ok(())
+        self.column.clear()
     }
 }
 
@@ -135,8 +130,7 @@ where
     /// After calling this method, the database should not be used anymore or it
     /// will panic.
     pub fn delete_db(self) -> Result<()> {
-        self.0.column.delete_db()?;
-        Ok(())
+        self.column.delete_db()
     }
 }
 
@@ -158,8 +152,7 @@ where
         Val: BytesDecode<'a>,
     {
         let key_bytes = Key::bytes_encode(key)?;
-
-        let val_bytes = self.0.column.get_ref(key_bytes.clone())?;
+        let val_bytes = self.column.get_ref(key_bytes.clone())?;
 
         match val_bytes {
             Some(val_bytes) => Ok(Some(RefValue {
@@ -192,7 +185,7 @@ where
     {
         let decoded_keys: Result<Vec<_>, _> =
             keys.into_iter().map(|key| Key::bytes_encode(key)).collect();
-        let res = self.0.column.get_multi_ref(&decoded_keys?)?;
+        let res = self.column.get_multi_ref(&decoded_keys?)?;
         let wrapped_res = res
             .into_iter()
             .map(|val| {
@@ -215,8 +208,8 @@ where
     /// Clear the database, removing all key-value pairs.
     pub fn transaction(&'a self) -> Result<DatabaseTransaction<'a, Key, Val, C>> {
         Ok(DatabaseTransaction {
-            column: self.0.column.transaction()?,
-            _phantom: PhantomData,
+            column: self.column.transaction()?,
+            marker: PhantomData,
         })
     }
 }
@@ -229,16 +222,7 @@ where
     /// Returns a reference to the underlying column.
     /// Can be used to access the database directly.
     pub fn inner(&self) -> &C {
-        &self.0.column
-    }
-}
-
-impl<K, V, D> Clone for Database<K, V, D>
-where
-    D: DatabaseBackend,
-{
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
+        &self.column
     }
 }
 
@@ -250,7 +234,7 @@ where
     /// Returns a reference to the underlying column.
     /// Can be used to access the database directly.
     pub fn flush(&self) -> Result<()> {
-        self.0.column.flush()
+        self.column.flush()
     }
 }
 
@@ -266,7 +250,7 @@ where
 
     /// Iterate over all key-value pairs in the database.
     pub fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>> {
-        let iter = self.0.column.iter()?;
+        let iter = self.column.iter()?;
         Ok(Box::new(iter))
     }
 }
@@ -291,7 +275,7 @@ where
         &'a self,
         prefix: impl AsRef<[u8]>,
     ) -> Result<DBIterator<'a, Vec<u8>, Vec<u8>>> {
-        let iter = self.0.column.iter_prefix(prefix)?;
+        let iter = self.column.iter_prefix(prefix)?;
         Ok(Box::new(iter))
     }
 }

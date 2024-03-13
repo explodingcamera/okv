@@ -8,7 +8,7 @@ where
     C: DBColumnTransaction<'a>,
 {
     pub(super) column: C::Txn,
-    pub(super) _phantom: PhantomData<(K, V)>,
+    pub(super) marker: PhantomData<(K, V)>,
 }
 
 impl<'a, K, V, C> DatabaseTransaction<'a, K, V, C>

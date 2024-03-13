@@ -180,7 +180,6 @@ pub trait DBCommonIter<Key, Val> {
     fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>>;
 
     /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
-    #[allow(clippy::type_complexity)] // not that complex really
     fn iter(&self) -> Result<DBIterator<Key::DItem, Val::DItem>>
     where
         Val: BytesDecodeOwned,

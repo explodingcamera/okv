@@ -3,14 +3,11 @@ use okv_core::{
     error::{Error, Result},
     traits::Innerable,
 };
-use redb::{
-    Database, ReadOnlyTable, ReadTransaction, ReadableTable, Table, TableDefinition,
-    UntypedTableHandle, WriteTransaction,
-};
+use redb::{Database, ReadableTable, TableDefinition};
 use self_cell::self_cell;
 
 pub(crate) fn okv_err(e: impl Into<redb::Error>) -> Error {
-    Error::DatabaseBackend(Box::new(redb::Error::from(e.into())))
+    Error::DatabaseBackend(Box::new(e.into()))
 }
 
 pub struct Redb {
@@ -41,7 +38,7 @@ impl RedbColumn {
         self.env.inner()
     }
 
-    fn table<'a>(&'a self) -> TableDefinition<'a, &'static [u8], &'static [u8]> {
+    fn table(&self) -> TableDefinition<'_, &'static [u8], &'static [u8]> {
         self.table.borrow_dependent().0
     }
 }
