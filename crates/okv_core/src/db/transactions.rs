@@ -2,7 +2,7 @@ use crate::{backend::*, error::Result, traits::*};
 use inherent::inherent;
 use std::marker::PhantomData;
 
-/// A temporary transaction database
+/// A temporary write-transaction
 pub struct DatabaseTransaction<'a, K, V, C>
 where
     C: DBColumnTransaction<'a>,
@@ -15,6 +15,14 @@ impl<'a, K, V, C> DatabaseTransaction<'a, K, V, C>
 where
     C: DBColumnTransaction<'a>,
 {
+    /// Changes the type of the transaction
+    pub fn as_type<K2, V2>(self) -> DatabaseTransaction<'a, K2, V2, C> {
+        DatabaseTransaction {
+            column: self.column,
+            marker: PhantomData,
+        }
+    }
+
     /// Commit the transaction.
     pub fn commit(self) -> Result<()> {
         self.column.commit()

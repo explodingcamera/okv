@@ -26,6 +26,8 @@ struct RedbTxInner<'db> {
 }
 
 impl RedbTransaction<'_> {
+    // not a super nice solution, works for now
+    // a seperate fn to create transactions with different durabilities would be better
     pub fn with_durability(self, durability: redb::Durability) -> Result<Self> {
         let mut inner = self.0.into_inner().into_heads();
         inner.tx.set_durability(durability);
