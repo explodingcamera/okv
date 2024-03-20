@@ -3,17 +3,18 @@
   <h1>OKV: Okay Key-Value Storage</h1>
 </div>
  
-[![docs.rs](https://img.shields.io/docsrs/okv?logo=rust)](https://docs.rs/okv) [![Crates.io](https://img.shields.io/crates/v/okv.svg?logo=rust)](https://crates.io/crates/okv) [![Crates.io](https://img.shields.io/crates/l/okv.svg)](./LICENSE-APACHE) 
+[![docs.rs](https://img.shields.io/docsrs/okv?logo=rust)](https://docs.rs/okv) [![Crates.io](https://img.shields.io/crates/v/okv.svg?logo=rust)](https://crates.io/crates/okv) [![Crates.io](https://img.shields.io/crates/l/okv.svg)](./LICENSE-APACHE)
 
-OKV is a versatile key-value storage library designed for Rust. It offers a simple yet powerful API, inspired by the [heed](https://github.com/meilisearch/heed) crate, and supports various databases and serialization formats.
+OKV is a versatile key-value storage library designed for Rust. It offers a simple yet powerful API, inspired by the [heed](https://github.com/meilisearch/heed) crate, and supports various databases and serialization formats. It doesn't give you the full power of a database, but it's a great choice for small to medium-sized projects that need a generic key-value storage solution that can be easily swapped out for a more powerful database later.
 
 ## Features
 
-- **Multiple Database Backends**: 
+- **Multiple Database Backends**:
   - `memdb`: In-memory database for rapid prototyping and testing.
   - `rocksdb`: RocksDB integration for robust, disk-based storage.
-  <!-- - `sqlite`: SQLite support for relational data storage. -->
-- **Serialization Formats**: 
+    <!-- - `redb`: Rust-only embedded database. -->
+    <!-- - `sqlite`: SQLite support for relational data storage. -->
+- **Serialization Formats**:
   - `serde_json`: JSON serialization for human-readable data storage.
   - `rmp-serde`: MessagePack serialization for efficient binary format.
 
@@ -49,15 +50,15 @@ fn main() -> eyre::Result<()> {
 
 # Supported Types
 
-OKV can work with any type that implements Serialize. Additionally, it supports the following types out of the box without any serialization overhead:
+OKV can work with any type that implements `serde::Serialize`/`serde::Deserialize`. Additionally, it supports the following types out of the box without any serialization overhead:
 
-* Integer types: [`u8`], [`u16`], [`u32`], [`u64`], [`u128`], [`i8`], [`i16`], [`i32`], [`i64`], [`i128`]
-* Basic types: `()`, [`&str`], [`String`], [`bool`]
-* Binary data: u8 slices (`&[u8]`), byte vectors (`Vec<u8>`), and byte arrays (`[u8; N]`)
+- Integer types: [`u8`], [`u16`], [`u32`], [`u64`], [`u128`], [`i8`], [`i16`], [`i32`], [`i64`], [`i128`]
+- Basic types: `()`, [`&str`], [`String`], [`bool`]
+- Binary data: u8 slices (`&[u8]`), byte vectors (`Vec<u8>`), and byte arrays (`[u8; N]`)
 
 # Acknowledgements
 
-Special thanks to the authors of the [heed](https://github.com/meilisearch/heed) crate for their inspiring work, which greatly influenced the development of OKV.
+Special thanks to the authors of the [heed](https://github.com/meilisearch/heed) crate for their inspiring work, which greatly influenced the API design and implementation of OKV.
 
 # License
 

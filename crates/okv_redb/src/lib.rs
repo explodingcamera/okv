@@ -5,7 +5,7 @@ use okv_core::{
 };
 
 pub use redb;
-use redb::{Database, ReadableTable, TableDefinition};
+use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
 use self_cell::self_cell;
 
 mod tx;
@@ -44,6 +44,13 @@ impl RedbColumn {
 
     fn table(&self) -> TableDefinition<'_, &'static [u8], &'static [u8]> {
         self.table.borrow_dependent().0
+    }
+
+    /// Returns the metadata for the table.
+    pub fn stats(&self) -> Result<redb::TableStats> {
+        let tx = self.db().begin_read().map_err(okv_err)?;
+        let table = tx.open_table(self.table()).map_err(okv_err)?;
+        Ok(table.stats().map_err(okv_err)?)
     }
 }
 

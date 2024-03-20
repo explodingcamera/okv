@@ -5,11 +5,11 @@ use okv_core::{
     error::{Error, Result},
 };
 use ouroboros::self_referencing;
-use redb::{ReadableTable, Table, TableDefinition};
+use redb::{ReadableTable, ReadableTableMetadata, Table, TableDefinition};
 
 use crate::{okv_err, RedbColumn};
 
-type TxTable<'db, 'tx> = Table<'db, 'tx, &'static [u8], &'static [u8]>;
+type TxTable<'tx> = Table<'tx, &'static [u8], &'static [u8]>;
 pub struct RedbTransaction<'a>(RefCell<RedbTxInner<'a>>);
 
 // sadly this doesn't work with self_cell because the 'db lifetime is needed
@@ -17,32 +17,12 @@ pub struct RedbTransaction<'a>(RefCell<RedbTxInner<'a>>);
 // and self referencing
 #[self_referencing]
 struct RedbTxInner<'db> {
-    tx: redb::WriteTransaction<'db>,
+    tx: redb::WriteTransaction,
     table_def: TableDefinition<'db, &'static [u8], &'static [u8]>,
 
     #[borrows(tx)]
     #[covariant]
-    table: TxTable<'db, 'this>,
-}
-
-impl RedbTransaction<'_> {
-    // not a super nice solution, works for now
-    // a seperate fn to create transactions with different durabilities would be better
-    pub fn with_durability(self, durability: redb::Durability) -> Result<Self> {
-        let mut inner = self.0.into_inner().into_heads();
-        inner.tx.set_durability(durability);
-
-        let tx = RedbTxInnerTryBuilder {
-            table_builder: |tx| {
-                let table = tx.open_table(inner.table_def).map_err(okv_err)?;
-                Result::<_, Error>::Ok(table)
-            },
-            table_def: inner.table_def,
-            tx: inner.tx,
-        }
-        .try_build()?;
-        Ok(RedbTransaction(tx.into()))
-    }
+    table: TxTable<'this>,
 }
 
 impl<'a> DBColumn for RedbTransaction<'a> {
@@ -103,6 +83,7 @@ impl<'a> DBTransaction for RedbTransaction<'a> {
 impl<'a> DBColumnTransaction<'a> for RedbColumn {
     type Txn = RedbTransaction<'a>;
 
+    /// Create a new transaction with the default durability ([`redb::Durability::Immediate`])
     fn transaction(&'a self) -> Result<Self::Txn> {
         let tx = RedbTxInnerTryBuilder {
             table_builder: |tx| {
@@ -111,6 +92,37 @@ impl<'a> DBColumnTransaction<'a> for RedbColumn {
             },
             table_def: self.table(),
             tx: self.db().begin_write().map_err(okv_err)?,
+        }
+        .try_build()?;
+
+        Ok(RedbTransaction(tx.into()))
+    }
+}
+
+impl RedbTransaction<'_> {
+    /// Retrieves information about the table.
+    pub fn stats(&self) -> Result<redb::TableStats> {
+        let inner = self.0.borrow();
+        inner.borrow_table().stats().map_err(okv_err)
+    }
+}
+
+impl RedbColumn {
+    /// Create a new transaction with the given durability.
+    pub fn transaction_with_durability(
+        &self,
+        durability: redb::Durability,
+    ) -> Result<RedbTransaction> {
+        let mut tx_inner = self.db().begin_write().map_err(okv_err)?;
+        tx_inner.set_durability(durability);
+
+        let tx = RedbTxInnerTryBuilder {
+            table_builder: |tx| {
+                let table = tx.open_table(self.table()).map_err(okv_err)?;
+                Result::<_, Error>::Ok(table)
+            },
+            table_def: self.table(),
+            tx: tx_inner,
         }
         .try_build()?;
 
