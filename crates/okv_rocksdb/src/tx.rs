@@ -106,7 +106,7 @@ impl<'a, DB> DBColumnRef<'a> for RocksDBTransaction<'a, DB> {
 }
 
 impl<'a, DB> DBColumnIterator for RocksDBTransaction<'a, DB> {
-    fn iter(&self) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+    fn iter(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
         let iter = self
             .tx
             .iterator_cf(&self.cf_handle, rocksdb::IteratorMode::Start)
@@ -123,7 +123,7 @@ impl<'a, DB> DBColumnIteratorPrefix for RocksDBTransaction<'a, DB> {
     fn iter_prefix(
         &self,
         prefix: impl AsRef<[u8]>,
-    ) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+    ) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
         let iter = self
             .tx
             .iterator_cf(
@@ -135,6 +135,6 @@ impl<'a, DB> DBColumnIteratorPrefix for RocksDBTransaction<'a, DB> {
                 Err(e) => Err(okv_err(e)),
             });
 
-        Ok(Box::new(iter))
+        Ok(iter)
     }
 }

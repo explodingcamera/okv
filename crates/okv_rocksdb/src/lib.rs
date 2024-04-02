@@ -95,7 +95,7 @@ macro_rules! implement_column_traits {
         }
 
         impl DBColumnIterator for $name {
-            fn iter(&self) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+            fn iter(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
                 let iter = self
                     .db()
                     .iterator_cf(self.cf_handle(), rocksdb::IteratorMode::Start)
@@ -112,7 +112,7 @@ macro_rules! implement_column_traits {
             fn iter_prefix(
                 &self,
                 prefix: impl AsRef<[u8]>,
-            ) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+            ) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
                 let iter = self
                     .db()
                     .iterator_cf(

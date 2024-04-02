@@ -129,7 +129,7 @@ impl DBColumn for MemDBColumn {
 }
 
 impl DBColumnIterator for MemDBColumn {
-    fn iter(&self) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_>> {
+    fn iter(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
         let iter = self
             .borrow_dependent()
             .iter()
@@ -141,10 +141,10 @@ impl DBColumnIterator for MemDBColumn {
 }
 
 impl DBColumnIteratorPrefix for MemDBColumn {
-    fn iter_prefix<'a>(
-        &'a self,
+    fn iter_prefix(
+        &self,
         prefix: impl AsRef<[u8]>,
-    ) -> Result<Box<dyn Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + 'a>> {
+    ) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
         let prefix = prefix.as_ref().to_vec();
         let iter = self
             .borrow_dependent()

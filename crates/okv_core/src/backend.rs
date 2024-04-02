@@ -1,8 +1,4 @@
-use crate::{
-    env::Env,
-    error::Result,
-    traits::{DBIterator, Innerable},
-};
+use crate::{env::Env, error::Result, traits::Innerable};
 
 /// Database backend trait.
 pub trait DatabaseBackend: Innerable + Sized + Send + Sync {
@@ -96,16 +92,17 @@ pub trait DBTransaction: DBColumn {
     fn rollback(self) -> Result<()>;
 }
 
-// FUTURE: use impl Trait when it's stable (https://github.com/rust-lang/rust/pull/115822)
 /// Database Iterator trait.
 pub trait DBColumnIterator {
     /// Create a new iterator.
-    fn iter(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>>;
+    fn iter(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>>;
 }
 
-// FUTURE: use impl Trait when it's stable (https://github.com/rust-lang/rust/pull/115822)
 /// Database Prefix Iterator trait.
 pub trait DBColumnIteratorPrefix {
     /// Create a new iterator.
-    fn iter_prefix(&self, prefix: impl AsRef<[u8]>) -> Result<DBIterator<Vec<u8>, Vec<u8>>>;
+    fn iter_prefix(
+        &self,
+        prefix: impl AsRef<[u8]>,
+    ) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>>;
 }

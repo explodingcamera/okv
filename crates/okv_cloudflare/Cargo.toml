@@ -1,0 +1,21 @@
+[package]
+name="okv_cloudflare"
+version="0.3.0"
+edition.workspace=true
+description="A versatile key-value storage library"
+keywords=["key-value", "database", "serde", "workers"]
+categories=["database", "concurrency", "api-bindings"]
+license.workspace=true
+authors.workspace=true
+repository.workspace=true
+publish=false
+
+[dependencies]
+okv_core={version="0.3.0", path="../okv_core"}
+worker="0.0.24"
+
+[features]
+default=["d1"]
+
+multi_threaded=[]
+d1=["worker/d1"]

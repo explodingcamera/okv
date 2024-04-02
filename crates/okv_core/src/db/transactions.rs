@@ -112,43 +112,28 @@ where
     }
 }
 
-#[inherent]
-impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, C> DBCommonIter<K, V>
-    for DatabaseTransaction<'a, K, V, C>
+impl<'tx, K: BytesDecodeOwned, V: BytesDecodeOwned, C: DBColumnTransaction<'tx>> DBCommonIter<K, V>
+    for DatabaseTransaction<'tx, K, V, C>
 where
-    for<'b> C: DBColumnTransaction<'b>,
-    <C as DBColumnTransaction<'a>>::Txn: DBColumnIterator,
+    C::Txn: DBColumnIterator,
 {
-    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
-    pub fn iter(&self) -> Result<DBIterator<K::DItem, V::DItem>>;
-
     /// Iterate over all key-value pairs in the database.
-    pub fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>> {
-        let iter = self.column.iter()?;
-        Ok(Box::new(iter))
+    fn iter_raw(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
+        self.column.iter()
     }
 }
 
-#[inherent]
 impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, C> DBCommonIterPrefix<'a, K, V>
     for DatabaseTransaction<'a, K, V, C>
 where
     C: DBColumnTransaction<'a>,
     C::Txn: DBColumnIteratorPrefix,
 {
-    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
-    #[allow(clippy::type_complexity)] // not that complex really
-    pub fn iter_prefix<'k, Prefix: BytesEncode<'k>>(
-        &'a self,
-        prefix: &'k Prefix::EItem,
-    ) -> Result<DBIterator<'a, K::DItem, V::DItem>>;
-
     /// Iterate over all key-value pairs in the database.
-    pub fn iter_prefix_raw(
+    fn iter_prefix_raw(
         &'a self,
         prefix: impl AsRef<[u8]>,
-    ) -> Result<DBIterator<'a, Vec<u8>, Vec<u8>>> {
-        let iter = self.column.iter_prefix(prefix)?;
-        Ok(Box::new(iter))
+    ) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
+        self.column.iter_prefix(prefix)
     }
 }

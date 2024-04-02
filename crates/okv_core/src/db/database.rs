@@ -240,42 +240,33 @@ where
 
 // Databases that support iterating
 #[inherent]
-impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, D, C> DBCommonIter<K, V> for Database<K, V, D>
+impl<K: BytesDecodeOwned, V: BytesDecodeOwned, D, C> DBCommonIter<K, V> for Database<K, V, D>
 where
-    for<'b> C: DBColumnIterator + 'a + 'b,
+    for<'b> C: DBColumnIterator + 'b,
     D: DatabaseBackend<Column = C>,
 {
     /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
-    pub fn iter(&self) -> Result<DBIterator<K::DItem, V::DItem>>;
+    pub fn iter(&self) -> Result<impl Iterator<Item = Result<(K::DItem, V::DItem)>> + '_>;
 
     /// Iterate over all key-value pairs in the database.
-    pub fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>> {
-        let iter = self.column.iter()?;
-        Ok(Box::new(iter))
+    #[allow(refining_impl_trait)] // we need to specify the lifetime
+    pub fn iter_raw(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>> + '_> {
+        self.column.iter()
     }
 }
 
 // Databases that support iterating with a prefix
-#[inherent]
 impl<'a, K: BytesDecodeOwned, V: BytesDecodeOwned, D, C> DBCommonIterPrefix<'a, K, V>
     for Database<K, V, D>
 where
     C: DBColumnIteratorPrefix + 'a,
     D: DatabaseBackend<Column = C>,
 {
-    /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
-    #[allow(clippy::type_complexity)] // not that complex really
-    pub fn iter_prefix<'k, Prefix: BytesEncode<'k>>(
-        &'a self,
-        prefix: &'k Prefix::EItem,
-    ) -> Result<DBIterator<'a, K::DItem, V::DItem>>;
-
     /// Iterate over all key-value pairs in the database.
-    pub fn iter_prefix_raw(
+    fn iter_prefix_raw(
         &'a self,
         prefix: impl AsRef<[u8]>,
-    ) -> Result<DBIterator<'a, Vec<u8>, Vec<u8>>> {
-        let iter = self.column.iter_prefix(prefix)?;
-        Ok(Box::new(iter))
+    ) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
+        self.column.iter_prefix(prefix)
     }
 }

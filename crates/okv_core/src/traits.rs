@@ -177,10 +177,10 @@ where
 /// A database that supports iterators.
 pub trait DBCommonIter<Key, Val> {
     /// Get a raw iterator over the database.
-    fn iter_raw(&self) -> Result<DBIterator<Vec<u8>, Vec<u8>>>;
+    fn iter_raw(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>>;
 
     /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
-    fn iter(&self) -> Result<DBIterator<Key::DItem, Val::DItem>>
+    fn iter(&self) -> Result<impl Iterator<Item = Result<(Key::DItem, Val::DItem)>>>
     where
         Val: BytesDecodeOwned,
         Key: BytesDecodeOwned,
@@ -192,20 +192,23 @@ pub trait DBCommonIter<Key, Val> {
             let val = Val::bytes_decode_owned(&val_bytes)?;
             Ok((key, val))
         });
-        Ok(Box::new(decoded_iterator))
+        Ok(decoded_iterator)
     }
 }
 
 /// A database that supports iterators over a prefix.
 pub trait DBCommonIterPrefix<'c, Key, Val> {
     /// Get a raw iterator over the database for a given byte prefix.
-    fn iter_prefix_raw(&'c self, prefix: impl AsRef<[u8]>) -> Result<DBIterator<Vec<u8>, Vec<u8>>>;
+    fn iter_prefix_raw(
+        &'c self,
+        prefix: impl AsRef<[u8]>,
+    ) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>>;
 
     /// Get a iterator over the database, transforming raw bytes to `Key` and `Val` types.
     fn iter_prefix<'k, Prefix>(
         &'c self,
         prefix: &'k Prefix::EItem,
-    ) -> Result<DBIterator<Key::DItem, Val::DItem>>
+    ) -> Result<impl Iterator<Item = Result<(Key::DItem, Val::DItem)>>>
     where
         Val: BytesDecodeOwned,
         Key: BytesDecodeOwned,
@@ -224,6 +227,3 @@ pub trait DBCommonIterPrefix<'c, Key, Val> {
         Ok(Box::new(decoded_iterator))
     }
 }
-
-/// An iterator over a database.
-pub type DBIterator<'c, Key, Val> = Box<dyn Iterator<Item = Result<(Key, Val)>> + 'c>;

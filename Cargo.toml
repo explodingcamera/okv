@@ -22,6 +22,7 @@ repository.workspace=true
 okv_core={version="0.3.0", path="crates/okv_core"}
 okv_redb={version="0.3.0", path="crates/okv_redb"}
 # okv_sqlite={version="0.3.0", path="crates/okv_sqlite", optional=true}
+# okv_cloudflare={version="0.3.0", path="crates/okv_cloudflare", optional=true}
 okv_rocksdb={version="0.3.0", path="crates/okv_rocksdb", optional=true}
 okv_memory={version="0.3.0", path="crates/okv_memory", optional=true}
 
@@ -52,6 +53,7 @@ uuid=["okv_core/uuid"]
 
 # storage engines
 # sqlite=["okv_sqlite"]
+# cloudflare=["okv_cloudflare"]
 rocksdb=["okv_rocksdb"]
 memory=["okv_memory"]
 

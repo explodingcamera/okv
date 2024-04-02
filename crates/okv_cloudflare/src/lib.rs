@@ -3,63 +3,68 @@ use okv_core::{
     error::{Error, Result},
     traits::Innerable,
 };
+use worker::kv::ToRawKvValue;
 
-pub use redb;
-use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
-use self_cell::self_cell;
-
-mod tx;
-
-pub(crate) fn okv_err(e: impl Into<redb::Error>) -> Error {
+pub(crate) fn okv_err(e: impl Into<worker::Error>) -> Error {
     Error::DatabaseBackend(Box::new(e.into()))
 }
 
-pub struct Redb {
-    db: Database,
+pub struct CfKV {
+    env: worker::Env,
+    namespace: String,
 }
 
-impl Redb {
-    pub fn new(connect_str: &str) -> Result<Self, redb::DatabaseError> {
-        let db = Database::create(connect_str)?;
-        Ok(Self { db })
+impl CfKV {
+    pub fn new(env: worker::Env, namespace: &str) -> Result<Self> {
+        Ok(Self {
+            env,
+            namespace: namespace.to_string(),
+        })
+    }
+
+    fn kv(&self) -> Result<worker::kv::KvStore> {
+        self.env.kv(&self.namespace).map_err(okv_err)
     }
 }
 
-impl Innerable for Redb {
-    type Inner = Database;
+impl Innerable for CfKV {
+    type Inner = worker::Env;
     fn inner(&self) -> &Self::Inner {
-        &self.db
+        &self.env
     }
 }
 
-pub struct RedbColumn {
-    pub(crate) env: okv_core::env::Env<Redb>,
-    pub(crate) table: RedbTableInner,
+pub struct CfKVColumn {
+    pub(crate) env: okv_core::env::Env<CfKV>,
+    pub(crate) prefix: String,
 }
 
-impl RedbColumn {
-    fn db(&self) -> &Database {
-        self.env.inner()
+impl CfKVColumn {
+    fn kv(&self) -> Result<worker::kv::KvStore> {
+        self.env.db().kv()
     }
 
-    fn table(&self) -> TableDefinition<'_, &'static [u8], &'static [u8]> {
-        self.table.borrow_dependent().0
-    }
-
-    /// Returns the metadata for the table.
-    pub fn stats(&self) -> Result<redb::TableStats> {
-        let tx = self.db().begin_read().map_err(okv_err)?;
-        let table = tx.open_table(self.table()).map_err(okv_err)?;
-        table.stats().map_err(okv_err)
+    fn str_key(&self, key: impl AsRef<[u8]>) -> Result<String> {
+        Ok(format!(
+            "{}{}",
+            self.prefix,
+            String::from_utf8(key.as_ref().to_vec()).map_err(|e| {
+                okv_core::error::Error::Unknown("key is not valid utf8".to_string())
+            })?
+        ))
     }
 }
 
-impl DBColumn for RedbColumn {
+impl DBColumn for CfKVColumn {
     fn contains(&self, key: impl AsRef<[u8]>) -> okv_core::error::Result<bool> {
-        let tx = self.db().begin_read().map_err(okv_err)?;
-        let table = tx.open_table(self.table()).map_err(okv_err)?;
-        let res = table.get(key.as_ref()).map_err(okv_err)?;
-        Ok(res.is_some())
+        let key = &self.str_key(key)?;
+        self.kv()?
+            .get(key)
+            .bytes()
+            .map_err(okv_err)
+            .map(|v| v.is_some());
+
+        Ok(true)
     }
 
     fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
@@ -125,31 +130,15 @@ impl DBColumn for RedbColumn {
     }
 }
 
-impl DatabaseBackend for Redb {
-    type Column = RedbColumn;
+impl DatabaseBackend for CfKV {
+    type Column = CfKVColumn;
     fn create_or_open(
         env: okv_core::env::Env<Self>,
         db: &str,
     ) -> okv_core::error::Result<Self::Column> {
-        let table = Self::Column {
+        Ok(CfKVColumn {
             env,
-            table: RedbTableInner::new(db.to_string(), |owner| {
-                let table = TableDefinition::new(owner);
-                BytesTable(table)
-            }),
-        };
-
-        Ok(table)
+            prefix: db.to_string(),
+        })
     }
 }
-
-struct BytesTable<'a>(TableDefinition<'a, &'static [u8], &'static [u8]>);
-
-self_cell!(
-    pub(crate) struct RedbTableInner {
-        owner: String,
-
-        #[covariant]
-        dependent: BytesTable,
-    }
-);
