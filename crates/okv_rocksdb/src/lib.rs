@@ -104,7 +104,7 @@ macro_rules! implement_column_traits {
                         Err(e) => Err(okv_err(e)),
                     });
 
-                Ok(Box::new(iter))
+                Ok(iter)
             }
         }
 
@@ -124,7 +124,7 @@ macro_rules! implement_column_traits {
                         Err(e) => Err(okv_err(e)),
                     });
 
-                Ok(Box::new(iter))
+                Ok(iter)
             }
         }
 

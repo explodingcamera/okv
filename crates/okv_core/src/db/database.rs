@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct Database<K, V, D: DatabaseBackend> {
     name: String,
-    column: Arc<D::Column>,
+    pub(super) column: Arc<D::Column>,
     marker: PhantomData<(K, V)>,
 }
 

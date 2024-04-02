@@ -224,6 +224,6 @@ pub trait DBCommonIterPrefix<'c, Key, Val> {
             Ok((key, val))
         });
 
-        Ok(Box::new(decoded_iterator))
+        Ok(decoded_iterator)
     }
 }

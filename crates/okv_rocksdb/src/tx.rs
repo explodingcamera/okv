@@ -115,7 +115,7 @@ impl<'a, DB> DBColumnIterator for RocksDBTransaction<'a, DB> {
                 Err(e) => Err(okv_err(e)),
             });
 
-        Ok(Box::new(iter))
+        Ok(iter)
     }
 }
 

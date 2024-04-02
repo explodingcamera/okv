@@ -130,13 +130,11 @@ impl DBColumn for MemDBColumn {
 
 impl DBColumnIterator for MemDBColumn {
     fn iter(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
-        let iter = self
+        Ok(self
             .borrow_dependent()
             .iter()
             .map(|item| (item.key().clone(), item.value().clone()))
-            .map(Ok);
-
-        Ok(Box::new(iter))
+            .map(Ok))
     }
 }
 
@@ -153,6 +151,6 @@ impl DBColumnIteratorPrefix for MemDBColumn {
             .map(|item| (item.key().clone(), item.value().clone()))
             .map(Ok);
 
-        Ok(Box::new(iter))
+        Ok(iter)
     }
 }
