@@ -1,9 +1,6 @@
-mod kv;
+#[cfg(feature = "worker")]
+/// Cloudflare Worker API based backends
+/// This is only safe to use in Cloudflare Workers and will not work in any other environment.
+pub mod worker;
 
-use okv_core::error::Error;
-
-pub(crate) fn okv_err(e: impl Into<worker::Error>) -> Error {
-    Error::DatabaseBackend(Box::new(e.into()))
-}
-
-pub use kv::{CfKV, CfKVColumn};
+// pub mod http;

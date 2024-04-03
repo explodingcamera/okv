@@ -46,6 +46,10 @@ pub mod backend {
     #[doc(inline)]
     pub use okv_memory as memory;
 
+    #[cfg(feature = "cloudflare")]
+    #[doc(inline)]
+    pub use okv_cloudflare as cloudflare;
+
     // TODO
     // #[cfg(feature = "sqlite")]
     // #[doc(inline)]
