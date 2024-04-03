@@ -5,18 +5,26 @@
  
 [![docs.rs](https://img.shields.io/docsrs/okv?logo=rust)](https://docs.rs/okv) [![Crates.io](https://img.shields.io/crates/v/okv.svg?logo=rust)](https://crates.io/crates/okv) [![Crates.io](https://img.shields.io/crates/l/okv.svg)](./LICENSE-APACHE)
 
-OKV is a versatile key-value storage library designed for Rust. It offers a simple yet powerful API, inspired by the [heed](https://github.com/meilisearch/heed) crate, and supports various databases and serialization formats. It doesn't give you the full power of a database, but it's a great choice for small to medium-sized projects that need a generic key-value storage solution that can be easily swapped out for a more powerful database later.
+OKV has provides a single, unified API for working with key-value storage, regardless of the underlying database. You get the flexibility to support multiple databases and serialization formats without changing your code, and no more fighting with async/await, lifetimes, or complex database APIs. Serialization is handled automatically, with whatever format you choose, with JSON and MessagePack supported out of the box and great serde support.
 
 ## Features
 
 - **Multiple Database Backends**:
-  - `memdb`: In-memory database for rapid prototyping and testing.
-  - `rocksdb`: RocksDB integration for robust, disk-based storage.
-    <!-- - `redb`: Rust-only embedded database. -->
+  - `memdb`: Pretty much just a HashMap that supports multithreading, for testing and prototyping
+  - `rocksdb`: RocksDB integration for robust, disk-based storage
+  - `redb`: Pure Rust embedded database inspired by lmdb
+  - `cloudflare`: Cloudflare KV and D1 storage for serverless applications, from workers or using the http API
     <!-- - `sqlite`: SQLite support for relational data storage. -->
 - **Serialization Formats**:
-  - `serde_json`: JSON serialization for human-readable data storage.
-  - `rmp-serde`: MessagePack serialization for efficient binary format.
+  - `serde_json`: JSON serialization for human-readable data storage
+  - `rmp-serde`: MessagePack serialization for efficient binary data storage
+  - _or bring your own format_
+- **Robust API**:
+  - **helpers** for common operations
+  - **transactions** for consistency (cross-database transactions are not supported yet)
+  - **iterators** for efficient data access
+  - **sync** and **async** APIs
+  - **direct access** to the underlying database for advanced use cases
 
 ## Installation
 
@@ -54,11 +62,9 @@ OKV can work with any type that implements `serde::Serialize`/`serde::Deserializ
 
 - Integer types: [`u8`], [`u16`], [`u32`], [`u64`], [`u128`], [`i8`], [`i16`], [`i32`], [`i64`], [`i128`]
 - Basic types: `()`, [`&str`], [`String`], [`bool`]
-- Binary data: u8 slices (`&[u8]`), byte vectors (`Vec<u8>`), and byte arrays (`[u8; N]`)
+- Binary data: any type that implements `AsRef<[u8]>` like [`Vec<u8>`], [`&[u8]`]
 
-# Acknowledgements
-
-Special thanks to the authors of the [heed](https://github.com/meilisearch/heed) crate for their inspiring work, which greatly influenced the API design and implementation of OKV.
+If you want to update a type later, I recommend [obake](https://crates.io/crates/obake) that adds versioning and migration support on a per key basis and works well with OKV.
 
 # License
 
