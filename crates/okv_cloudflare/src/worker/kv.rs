@@ -1,8 +1,8 @@
-use okv_core::{
-    backend::DatabaseBackend, backend_async::DBColumnAsync, error::Result, traits::Innerable,
-};
+use futures::future::join_all;
+use okv_core::{backend::DatabaseBackend, backend_async::DBColumnAsync};
+use okv_core::{error::Result, traits::Innerable};
 
-use crate::okv_err;
+use super::okv_err;
 
 pub struct CfKV {
     env: worker::Env,
@@ -41,10 +41,12 @@ impl CfKVColumn {
 
     fn str_key(&self, key: impl AsRef<[u8]>) -> Result<String> {
         Ok(format!(
-            "{}{}",
+            "{}-{}",
             self.prefix,
-            String::from_utf8(key.as_ref().to_vec()).map_err(|e| {
-                okv_core::error::Error::Unknown("key is not valid utf8".to_string())
+            String::from_utf8(key.as_ref().to_vec()).map_err(|_| {
+                okv_core::error::Error::Unknown(
+                    "key is not valid utf8 - this is required for Cloudflare KV".to_string(),
+                )
             })?
         ))
     }
@@ -63,7 +65,7 @@ impl DBColumnAsync for CfKVColumn {
         #[worker::send]
         async fn inner(env: &CfKVColumn, key: Result<String>, val: impl AsRef<[u8]>) -> Result<()> {
             env.kv()?
-                .put(&key?, val.as_ref())
+                .put_bytes(&key?, val.as_ref())
                 .map_err(okv_err)?
                 .execute()
                 .await
@@ -96,7 +98,27 @@ impl DBColumnAsync for CfKVColumn {
         I: IntoIterator,
         I::Item: AsRef<[u8]>,
     {
-        async { todo!() }
+        let keys = keys
+            .into_iter()
+            .map(|k| self.str_key(k))
+            .collect::<Result<Vec<_>>>();
+
+        #[inline]
+        #[worker::send]
+        async fn inner(
+            env: &CfKVColumn,
+            keys: Result<Vec<String>>,
+        ) -> Result<Vec<Option<Vec<u8>>>> {
+            let keys = keys?;
+            let futures = keys
+                .into_iter()
+                .map(|key| async move { env.kv()?.get(&key).bytes().await.map_err(okv_err) })
+                .collect::<Vec<_>>(); // Collecting futures here
+
+            join_all(futures).await.into_iter().collect() // Awaiting all futures concurrently
+        }
+
+        inner(self, keys)
     }
 
     fn async_delete(

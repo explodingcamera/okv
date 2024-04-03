@@ -12,10 +12,12 @@ publish=false
 
 [dependencies]
 okv_core={version="0.3.0", path="../okv_core"}
-worker="0.0.24"
+worker={version="0.0", optional=true}
+futures="0.3.5"
 
 [features]
-default=["d1"]
+default=["d1", "worker"]
 
-multi_threaded=[]
+# http=[]
+worker=["dep:worker"]
 d1=["worker/d1"]

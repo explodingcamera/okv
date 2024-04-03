@@ -59,7 +59,7 @@ uuid=["okv_core/uuid"]
 
 # storage engines
 # sqlite=["okv_sqlite"]
-# cloudflare=["okv_cloudflare"]
+cloudflare=["okv_cloudflare"]
 rocksdb=["okv_rocksdb"]
 memory=["okv_memory"]
 
