@@ -9,16 +9,16 @@ impl<Key, Val, D: DatabaseBackend> crate::traits_async::DBCommonAsync<Key, Val>
 where
     D::Column: DBColumnAsync,
 {
-    async fn async_set<'k, 'v>(&'v self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
+    async fn aset<'k, 'v>(&'v self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
     where
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>,
     {
-        self.async_set_raw(Key::bytes_encode(key)?, &Val::bytes_encode(val)?)
+        self.aset_raw(Key::bytes_encode(key)?, &Val::bytes_encode(val)?)
             .await
     }
 
-    fn async_set_raw<'v>(
+    fn aset_raw<'v>(
         &'v self,
         key: impl AsRef<[u8]>,
         val: &'v [u8],

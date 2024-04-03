@@ -1,7 +1,6 @@
 use eyre::Result;
 use okv::backend::rocksdb::RocksDbOptimistic;
-use okv::Env;
-use okv_core::traits_async::DBCommonAsync;
+use okv::{DBCommonAsync, Env};
 
 fn main() -> Result<()> {
     // ensure that the directory exists
@@ -13,8 +12,7 @@ fn main() -> Result<()> {
 
     // open a database with the specified key and value types
     let db = env.open::<&str, &str>("test")?;
-
-    db.async_set("hello", "world");
+    let _ = db.aset("hello", "world");
 
     db.set_nx("hello", "world")?;
     assert_eq!(db.get("hello")?, Some("world".to_string()));

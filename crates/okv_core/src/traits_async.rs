@@ -2,7 +2,7 @@ use crate::{error::Result, traits::BytesEncode};
 
 pub trait DBCommonAsync<Key, Val> {
     /// Get the serialized `val` from the database by `key`.
-    fn async_set<'k, 'v>(
+    fn aset<'k, 'v>(
         &'v self,
         key: &'k Key::EItem,
         val: &'v Val::EItem,
@@ -13,11 +13,11 @@ pub trait DBCommonAsync<Key, Val> {
     {
         let key = Key::bytes_encode(key);
         let val = Val::bytes_encode(val);
-        async { self.async_set_raw(key?, &val?).await }
+        async { self.aset_raw(key?, &val?).await }
     }
 
     /// Set a key to a value in the database.
-    fn async_set_raw<'v>(
+    fn aset_raw<'v>(
         &'v self,
         key: impl AsRef<[u8]>,
         val: &'v [u8],

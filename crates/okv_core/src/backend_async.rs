@@ -1,4 +1,4 @@
-use crate::{backend::DBColumn, error::Result};
+use crate::error::Result;
 
 pub trait DBColumnAsync {
     fn async_set(
@@ -8,28 +8,26 @@ pub trait DBColumnAsync {
     ) -> impl std::future::Future<Output = Result<()>> + Send;
 }
 
-impl<T: DBColumnAsync> DBColumn for T {
-    fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
-        todo!()
-    }
-
-    fn get(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
-        todo!()
-    }
-
-    fn get_multi<I>(&self, keys: I) -> Result<Vec<Option<Vec<u8>>>>
-    where
-        I: IntoIterator,
-        I::Item: AsRef<[u8]>,
-    {
-        todo!()
-    }
-
-    fn delete(&self, key: impl AsRef<[u8]>) -> Result<()> {
-        todo!()
-    }
-
-    fn contains(&self, key: impl AsRef<[u8]>) -> Result<bool> {
-        todo!()
-    }
+// implement async methods for a struct that implements DBColumn
+// Using the existing sync methods is recommended.
+#[macro_export]
+macro_rules! async_fallback {
+    ( $column:ty ) => {
+        #[inherent::inherent]
+        impl okv_core::backend_async::DBColumnAsync for $column
+        where
+            $column: okv_core::backend::DBColumn,
+        {
+            fn async_set(
+                &self,
+                key: impl AsRef<[u8]>,
+                val: impl AsRef<[u8]>,
+            ) -> impl std::future::Future<Output = Result<()>> + Send + '_ {
+                let res = self.set(key, val);
+                async move { res }
+            }
+        }
+    };
 }
+
+pub use async_fallback;
