@@ -30,7 +30,7 @@ where
 
     fn aset_raw<'v>(
         &'v self,
-        key: impl AsRef<[u8]>,
+        key: impl AsRef<[u8]> + Send + Sync,
         val: &'v [u8],
     ) -> impl Future<Output = Result<()>> + Send {
         self.column.async_set(key, val)

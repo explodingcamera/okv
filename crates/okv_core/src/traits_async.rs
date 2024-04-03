@@ -9,7 +9,7 @@ pub trait DBCommonAsync<Key, Val> {
     /// Set a key to a value in the database.
     fn aset_raw<'v>(
         &'v self,
-        key: impl AsRef<[u8]>,
+        key: impl AsRef<[u8]> + Send + Sync,
         val: &'v [u8],
     ) -> impl Future<Output = Result<()>> + Send;
 

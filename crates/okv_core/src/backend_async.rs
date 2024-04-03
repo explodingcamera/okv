@@ -7,14 +7,14 @@ pub trait DBColumnAsync {
     fn async_set(
         &self,
         key: impl AsRef<[u8]>,
-        val: impl AsRef<[u8]>,
+        val: impl AsRef<[u8]> + Send,
     ) -> impl Future<Output = Result<()>> + Send;
 
     /// Set a key-value pair if the key does not exist.
     fn async_set_nx<'a>(
         &self,
         key: impl AsRef<[u8]> + 'a,
-        val: impl AsRef<[u8]> + 'a,
+        val: impl AsRef<[u8]> + 'a + Send,
     ) -> impl Future<Output = Result<bool>> {
         async move {
             let key = key.as_ref();

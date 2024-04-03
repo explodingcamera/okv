@@ -50,20 +50,42 @@ impl CfKVColumn {
     }
 }
 
+// for now, this is super annoying since a lot of the worker stuff isn't Send: https://github.com/cloudflare/workers-rs/issues/485
 impl DBColumnAsync for CfKVColumn {
     fn async_set(
         &self,
         key: impl AsRef<[u8]>,
-        val: impl AsRef<[u8]>,
+        val: impl AsRef<[u8]> + Send,
     ) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { todo!() }
+        let key = self.str_key(key);
+
+        #[inline]
+        #[worker::send]
+        async fn inner(env: &CfKVColumn, key: Result<String>, val: impl AsRef<[u8]>) -> Result<()> {
+            env.kv()?
+                .put(&key?, val.as_ref())
+                .map_err(okv_err)?
+                .execute()
+                .await
+                .map_err(okv_err)
+        }
+
+        inner(self, key, val)
     }
 
     fn async_get(
         &self,
         key: impl AsRef<[u8]>,
     ) -> impl std::future::Future<Output = Result<Option<Vec<u8>>>> + Send {
-        async { todo!() }
+        let key = self.str_key(key);
+
+        #[inline]
+        #[worker::send]
+        async fn inner(env: &CfKVColumn, key: Result<String>) -> Result<Option<Vec<u8>>> {
+            env.kv()?.get(&key?).bytes().await.map_err(okv_err)
+        }
+
+        inner(self, key)
     }
 
     fn async_get_multi<I>(
@@ -81,14 +103,35 @@ impl DBColumnAsync for CfKVColumn {
         &self,
         key: impl AsRef<[u8]>,
     ) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { todo!() }
+        let key = self.str_key(key);
+
+        #[inline]
+        #[worker::send]
+        async fn inner(env: &CfKVColumn, key: Result<String>) -> Result<()> {
+            env.kv()?.delete(&key?).await.map_err(okv_err)
+        }
+
+        inner(self, key)
     }
 
     fn async_contains(
         &self,
         key: impl AsRef<[u8]>,
     ) -> impl std::future::Future<Output = Result<bool>> + Send {
-        async { todo!() }
+        let key = self.str_key(key);
+
+        #[inline]
+        #[worker::send]
+        async fn inner(env: &CfKVColumn, key: Result<String>) -> Result<bool> {
+            env.kv()?
+                .get(&key?)
+                .bytes()
+                .await
+                .map_err(okv_err)
+                .map(|res| res.is_some())
+        }
+
+        inner(self, key)
     }
 }
 
