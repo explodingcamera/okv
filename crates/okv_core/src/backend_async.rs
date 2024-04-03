@@ -60,50 +60,57 @@ macro_rules! async_fallback {
         where
             $column: okv_core::backend::DBColumn,
         {
-            fn async_set(
-                &self,
-                key: impl AsRef<[u8]>,
-                val: impl AsRef<[u8]>,
-            ) -> impl std::future::Future<Output = Result<()>> + Send + '_ {
-                let res = self.set(key, val);
-                async move { res }
-            }
+            okv_core::async_fallback_impl!();
+        }
+    };
+}
 
-            fn async_get(
-                &self,
-                key: impl AsRef<[u8]>,
-            ) -> impl std::future::Future<Output = Result<Option<Vec<u8>>>> + Send + '_ {
-                let res = self.get(key);
-                async move { res }
-            }
+#[macro_export]
+macro_rules! async_fallback_impl {
+    () => {
+        fn async_set(
+            &self,
+            key: impl AsRef<[u8]>,
+            val: impl AsRef<[u8]>,
+        ) -> impl std::future::Future<Output = okv_core::error::Result<()>> + Send + '_ {
+            let res = self.set(key, val);
+            async move { res }
+        }
 
-            fn async_get_multi<I>(
-                &self,
-                keys: I,
-            ) -> impl std::future::Future<Output = Result<Vec<Option<Vec<u8>>>>> + Send + '_
-            where
-                I: IntoIterator,
-                I::Item: AsRef<[u8]>,
-            {
-                let res = self.get_multi(keys);
-                async move { res }
-            }
+        fn async_get(
+            &self,
+            key: impl AsRef<[u8]>,
+        ) -> impl std::future::Future<Output = okv_core::error::Result<Option<Vec<u8>>>> + Send + '_ {
+            let res = self.get(key);
+            async move { res }
+        }
 
-            fn async_delete(
-                &self,
-                key: impl AsRef<[u8]>,
-            ) -> impl std::future::Future<Output = Result<()>> + Send + '_ {
-                let res = self.delete(key);
-                async move { res }
-            }
+        fn async_get_multi<I>(
+            &self,
+            keys: I,
+        ) -> impl std::future::Future<Output = okv_core::error::Result<Vec<Option<Vec<u8>>>>> + Send + '_
+        where
+            I: IntoIterator,
+            I::Item: AsRef<[u8]>,
+        {
+            let res = self.get_multi(keys);
+            async move { res }
+        }
 
-            fn async_contains(
-                &self,
-                key: impl AsRef<[u8]>,
-            ) -> impl std::future::Future<Output = Result<bool>> + Send + '_ {
-                let res = self.contains(key);
-                async move { res }
-            }
+        fn async_delete(
+            &self,
+            key: impl AsRef<[u8]>,
+        ) -> impl std::future::Future<Output = okv_core::error::Result<()>> + Send + '_ {
+            let res = self.delete(key);
+            async move { res }
+        }
+
+        fn async_contains(
+            &self,
+            key: impl AsRef<[u8]>,
+        ) -> impl std::future::Future<Output = okv_core::error::Result<bool>> + Send + '_ {
+            let res = self.contains(key);
+            async move { res }
         }
     };
 }

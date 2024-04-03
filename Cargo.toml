@@ -6,7 +6,13 @@ authors=["Henry Gressmann <mail@henrygressmann.de>"]
 repository="https://github.com/explodingcamera/okv"
 
 [workspace]
-members=["crates/okv_core", "crates/okv_sqlite", "crates/okv_rocksdb", "crates/okv_memory"]
+members=[
+    "crates/okv_core",
+    "crates/okv_sqlite",
+    "crates/okv_rocksdb",
+    "crates/okv_memory",
+    "crates/okv_cloudflare",
+]
 resolver="2"
 
 [package]
@@ -22,7 +28,7 @@ repository.workspace=true
 okv_core={version="0.3.0", path="crates/okv_core"}
 okv_redb={version="0.3.0", path="crates/okv_redb"}
 # okv_sqlite={version="0.3.0", path="crates/okv_sqlite", optional=true}
-# okv_cloudflare={version="0.3.0", path="crates/okv_cloudflare", optional=true}
+okv_cloudflare={version="0.3.0", path="crates/okv_cloudflare", optional=true}
 okv_rocksdb={version="0.3.0", path="crates/okv_rocksdb", optional=true}
 okv_memory={version="0.3.0", path="crates/okv_memory", optional=true}
 

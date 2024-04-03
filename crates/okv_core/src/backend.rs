@@ -3,7 +3,7 @@ use crate::{env::Env, error::Result, traits::Innerable};
 /// Database backend trait.
 pub trait DatabaseBackend: Innerable + Sized + Send + Sync {
     /// The type of the 'column', this is a reference to a database.
-    type Column: DBColumn;
+    type Column;
 
     /// Create or open a database.
     fn create_or_open(env: Env<Self>, db: &str) -> Result<Self::Column>;

@@ -1,7 +1,8 @@
-use okv_core::{async_fallback, backend::*, env::Env, error::*, traits::*};
+use okv_core::{backend::*, env::Env, error::*, traits::*};
 use rocksdb::{BoundColumnFamily, DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 use std::sync::Arc;
 
+mod r#async;
 mod normal;
 mod optimistic;
 mod pessimistic;
@@ -10,10 +11,6 @@ mod tx;
 pub use normal::*;
 pub use optimistic::*;
 pub use pessimistic::*;
-
-async_fallback!(RocksDbOptimisticColumn);
-async_fallback!(RocksDbPessimisticColumn);
-async_fallback!(RocksDbColumn);
 
 pub(crate) fn okv_err(e: rocksdb::Error) -> Error {
     Error::DatabaseBackend(Box::new(e))

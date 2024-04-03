@@ -6,19 +6,26 @@ use crate::backend_async::DBColumnAsync;
 use crate::{error::Result, traits::BytesEncode};
 
 #[allow(clippy::manual_async_fn)]
-
 impl<Key, Val, D: DatabaseBackend> crate::traits_async::DBCommonAsync<Key, Val>
     for Database<Key, Val, D>
 where
-    D::Column: DBColumnAsync,
+    D::Column: DBColumnAsync + Send + Sync,
+    Key: Send + Sync,
+    Val: Send + Sync,
 {
-    async fn aset<'k, 'v>(&'v self, key: &'k <Key>::EItem, val: &'v <Val>::EItem) -> Result<()>
+    fn aset<'k, 'v>(
+        &'v self,
+        key: &'k <Key>::EItem,
+        val: &'v <Val>::EItem,
+    ) -> impl Future<Output = Result<()>> + Send
     where
         Key: BytesEncode<'k>,
         Val: BytesEncode<'v>,
     {
-        self.aset_raw(Key::bytes_encode(key)?, &Val::bytes_encode(val)?)
-            .await
+        let key = Key::bytes_encode(key);
+        let val = Val::bytes_encode(val);
+
+        async { self.aset_raw(key?, &val?).await }
     }
 
     fn aset_raw<'v>(
@@ -37,14 +44,14 @@ where
         async { todo!() }
     }
 
-    fn adelete<'k>(&self, _key: &'k <Key>::EItem) -> impl Future<Output = Result<()>>
+    fn adelete<'k>(&self, _key: &'k <Key>::EItem) -> impl Future<Output = Result<()>> + Send
     where
         Key: BytesEncode<'k>,
     {
         async { todo!() }
     }
 
-    fn acontains<'k>(&self, _key: &'k <Key>::EItem) -> impl Future<Output = Result<bool>>
+    fn acontains<'k>(&self, _key: &'k <Key>::EItem) -> impl Future<Output = Result<bool>> + Send
     where
         Key: BytesEncode<'k>,
     {
