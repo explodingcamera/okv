@@ -7,7 +7,9 @@ use crate::types::RefValue;
 /// This is used to flush the database on supported backends.
 pub trait Flushable {
     /// Flush the database to disk.
-    fn flush(&self) -> Result<()>;
+    fn flush(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// A trait that represents an innerable structure.
@@ -224,6 +226,6 @@ pub trait DBCommonIterPrefix<'c, Key, Val> {
             Ok((key, val))
         });
 
-        Ok(Box::new(decoded_iterator))
+        Ok(decoded_iterator)
     }
 }

@@ -8,6 +8,7 @@ pub use redb;
 use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
 use self_cell::self_cell;
 
+mod r#async;
 mod tx;
 
 pub(crate) fn okv_err(e: impl Into<redb::Error>) -> Error {

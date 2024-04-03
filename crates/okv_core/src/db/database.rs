@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct Database<K, V, D: DatabaseBackend> {
     name: String,
-    column: Arc<D::Column>,
+    pub(super) column: Arc<D::Column>,
     marker: PhantomData<(K, V)>,
 }
 
@@ -42,7 +42,10 @@ impl<K, V, D: DatabaseBackend> Database<K, V, D> {
 
 // All databases
 #[inherent]
-impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Database<Key, Val, D> {
+impl<Key, Val, D: DatabaseBackend> crate::traits::DBCommon<Key, Val> for Database<Key, Val, D>
+where
+    D::Column: DBColumn,
+{
     /// Get the value from the database by `key`.
     pub fn get_raw(&self, key: impl AsRef<[u8]>) -> Result<Option<Vec<u8>>> {
         self.column.get(key)

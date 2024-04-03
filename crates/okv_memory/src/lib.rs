@@ -7,9 +7,10 @@ use okv_core::{
 };
 use self_cell::self_cell;
 
+mod r#async;
+
 /// An in-memory database backend.
 /// This is useful for testing and prototyping.
-/// Not optimized for performance.
 #[derive(Clone)]
 pub struct MemDB {
     columns: DashMap<String, DashMap<Vec<u8>, Vec<u8>>>,
@@ -70,7 +71,6 @@ type MemDBColumnInner<'a> = dashmap::mapref::one::Ref<'a, String, DashMap<Vec<u8
 self_cell!(
     /// A column in an in-memory database.
     pub struct MemDBColumn {
-        // _name: String,
         owner: Env<MemDB>,
 
         #[covariant]
@@ -85,12 +85,7 @@ impl DBColumnClear for MemDBColumn {
     }
 }
 
-impl Flushable for MemDBColumn {
-    /// No-op.
-    fn flush(&self) -> Result<()> {
-        Ok(())
-    }
-}
+impl Flushable for MemDBColumn {}
 
 impl DBColumn for MemDBColumn {
     fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> Result<()> {
@@ -130,13 +125,11 @@ impl DBColumn for MemDBColumn {
 
 impl DBColumnIterator for MemDBColumn {
     fn iter(&self) -> Result<impl Iterator<Item = Result<(Vec<u8>, Vec<u8>)>>> {
-        let iter = self
+        Ok(self
             .borrow_dependent()
             .iter()
             .map(|item| (item.key().clone(), item.value().clone()))
-            .map(Ok);
-
-        Ok(Box::new(iter))
+            .map(Ok))
     }
 }
 
@@ -153,6 +146,6 @@ impl DBColumnIteratorPrefix for MemDBColumn {
             .map(|item| (item.key().clone(), item.value().clone()))
             .map(Ok);
 
-        Ok(Box::new(iter))
+        Ok(iter)
     }
 }

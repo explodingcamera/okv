@@ -57,3 +57,6 @@ pub use okv_core::traits::{
     DBCommon, DBCommonClear, DBCommonDelete, DBCommonIter, DBCommonIterPrefix, DBCommonRef,
     DBCommonRefBatch,
 };
+
+#[doc(inline)]
+pub use okv_core::traits_async::DBCommonAsync;

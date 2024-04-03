@@ -2,6 +2,7 @@ use okv_core::{backend::*, env::Env, error::*, traits::*};
 use rocksdb::{BoundColumnFamily, DBPinnableSlice, OptimisticTransactionDB, TransactionDB, DB};
 use std::sync::Arc;
 
+mod r#async;
 mod normal;
 mod optimistic;
 mod pessimistic;
@@ -104,7 +105,7 @@ macro_rules! implement_column_traits {
                         Err(e) => Err(okv_err(e)),
                     });
 
-                Ok(Box::new(iter))
+                Ok(iter)
             }
         }
 
@@ -124,7 +125,7 @@ macro_rules! implement_column_traits {
                         Err(e) => Err(okv_err(e)),
                     });
 
-                Ok(Box::new(iter))
+                Ok(iter)
             }
         }
 
