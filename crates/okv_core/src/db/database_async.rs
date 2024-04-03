@@ -1,8 +1,11 @@
-use crate::{
-    backend::DatabaseBackend, backend_async::DBColumnAsync, error::Result, traits::BytesEncode,
-};
-
 use super::Database;
+use std::future::Future;
+
+use crate::backend::DatabaseBackend;
+use crate::backend_async::DBColumnAsync;
+use crate::{error::Result, traits::BytesEncode};
+
+#[allow(clippy::manual_async_fn)]
 
 impl<Key, Val, D: DatabaseBackend> crate::traits_async::DBCommonAsync<Key, Val>
     for Database<Key, Val, D>
@@ -22,7 +25,46 @@ where
         &'v self,
         key: impl AsRef<[u8]>,
         val: &'v [u8],
-    ) -> impl std::future::Future<Output = Result<()>> + Send {
+    ) -> impl Future<Output = Result<()>> + Send {
         self.column.async_set(key, val)
+    }
+
+    fn aset_nx_raw<'v>(
+        &'v self,
+        _key: impl AsRef<[u8]>,
+        _val: &'v [u8],
+    ) -> impl Future<Output = Result<bool>> + Send {
+        async { todo!() }
+    }
+
+    fn adelete<'k>(&self, _key: &'k <Key>::EItem) -> impl Future<Output = Result<()>>
+    where
+        Key: BytesEncode<'k>,
+    {
+        async { todo!() }
+    }
+
+    fn acontains<'k>(&self, _key: &'k <Key>::EItem) -> impl Future<Output = Result<bool>>
+    where
+        Key: BytesEncode<'k>,
+    {
+        async { todo!() }
+    }
+
+    fn aget_raw(
+        &self,
+        _key: impl AsRef<[u8]>,
+    ) -> impl Future<Output = Result<Option<Vec<u8>>>> + Send {
+        async { todo!() }
+    }
+
+    fn aget_multi_raw<I, IV: AsRef<[u8]>>(
+        &self,
+        _keys: I,
+    ) -> impl Future<Output = Result<Vec<Option<Vec<u8>>>>> + Send
+    where
+        I: IntoIterator<Item = IV>,
+    {
+        async { todo!() }
     }
 }
