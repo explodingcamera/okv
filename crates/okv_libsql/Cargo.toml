@@ -1,6 +1,6 @@
 [package]
-name="okv_sqlite"
-version="0.3.0"
+name="okv_libsql"
+version="0.4.0+libsql-client.0.33"
 edition.workspace=true
 description="A versatile key-value storage library"
 keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
@@ -11,7 +11,8 @@ repository.workspace=true
 publish=false
 
 [dependencies]
-okv_core={version="0.3.0", path="../okv_core"}
+okv_core={version="0.4", path="../core"}
+libsql-client="0.33"
 
 [features]
 multi_threaded=[]

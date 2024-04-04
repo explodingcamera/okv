@@ -1,6 +1,6 @@
 [package]
 name="okv_rocksdb"
-version="0.3.0"
+version="0.4.22+rocksdb.0.22"
 edition.workspace=true
 description="A versatile key-value storage library"
 keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
@@ -10,8 +10,8 @@ authors.workspace=true
 repository.workspace=true
 
 [dependencies]
-okv_core={version="0.3.0", path="../okv_core"}
-rocksdb={version="0.22.0", default-features=false, features=["multi-threaded-cf"]}
+okv_core={version="0.4", path="../core"}
+rocksdb={version="0.22", default-features=false, features=["multi-threaded-cf"]}
 inherent="1.0"
 self_cell="1.0"
 

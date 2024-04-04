@@ -1,6 +1,6 @@
 [package]
 name="okv_core"
-version="0.3.1"
+version.workspace=true
 edition.workspace=true
 description="A versatile key-value storage library"
 keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
@@ -13,6 +13,7 @@ repository.workspace=true
 thiserror="1.0"
 byteorder="1.5"
 inherent="1.0"
+futures={version="0.3", optional=true}
 
 serde={version="1.0", optional=true, features=["derive"]}
 serde_json={version="1.0", optional=true}
@@ -25,6 +26,7 @@ okv={path="../../", features=["memory"]}
 [features]
 default=["multi_threaded"]
 
+async=["futures"]
 multi_threaded=[]
 serde=["dep:serde"]
 serde_json=["serde", "dep:serde_json"]

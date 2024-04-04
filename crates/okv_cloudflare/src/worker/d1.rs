@@ -1,8 +1,10 @@
+use okv_core::backend_async::sync_fallback;
 use okv_core::{backend::DatabaseBackend, backend_async::DBColumnAsync};
 use okv_core::{error::Result, traits::Innerable};
 use worker::D1Type;
 
 use super::okv_err;
+sync_fallback!(CfD1Column);
 
 pub struct CfD1 {
     env: worker::Env,
@@ -156,12 +158,29 @@ impl DBColumnAsync for CfD1Column {
     }
 }
 
+async fn create_table(d1: worker::D1Database, table: &str) -> Result<()> {
+    let statement = d1.prepare("CREATE TABLE IF NOT EXISTS ?1 (key TEXT PRIMARY KEY, value BLOB)");
+    let query = statement.bind(&[table.into()]).map_err(okv_err)?;
+    match query.run().await {
+        Err(e) => Err(okv_err(e)),
+        Ok(res) => match res.error() {
+            Some(e) => Err(okv_err(e)),
+            None => Ok(()),
+        },
+    }
+}
+
 impl DatabaseBackend for CfD1 {
     type Column = CfD1Column;
     fn create_or_open(
         env: okv_core::env::Env<Self>,
         db: &str,
     ) -> okv_core::error::Result<Self::Column> {
+        futures::executor::block_on(async {
+            let d1 = env.db().d1()?;
+            create_table(d1, db).await
+        })?;
+
         Ok(CfD1Column {
             env,
             table: db.to_string(),

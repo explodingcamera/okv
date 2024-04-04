@@ -7,7 +7,10 @@ use okv_core::{
 };
 use self_cell::self_cell;
 
-mod r#async;
+use okv_core::async_fallback;
+use okv_core::backend::DBColumn;
+
+async_fallback!(MemDBColumn);
 
 /// An in-memory database backend.
 /// This is useful for testing and prototyping.

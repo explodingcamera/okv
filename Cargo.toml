@@ -4,20 +4,15 @@ description="A versatile key-value storage library"
 license="MIT OR Apache-2.0"
 authors=["Henry Gressmann <mail@henrygressmann.de>"]
 repository="https://github.com/explodingcamera/okv"
+version="0.4.0"
 
 [workspace]
-members=[
-    "crates/okv_core",
-    "crates/okv_sqlite",
-    "crates/okv_rocksdb",
-    "crates/okv_memory",
-    "crates/okv_cloudflare",
-]
+members=["crates/*"]
 resolver="2"
 
 [package]
 name="okv"
-version="0.3.1"
+version.workspace=true
 edition.workspace=true
 description="A versatile key-value storage library"
 license.workspace=true
@@ -25,12 +20,12 @@ authors.workspace=true
 repository.workspace=true
 
 [dependencies]
-okv_core={version="0.3.0", path="crates/okv_core"}
-okv_redb={version="0.3.0", path="crates/okv_redb"}
+okv_core={version="0.4.0", path="crates/core"}
+okv_redb={version="0.4", path="crates/okv_redb"}
 # okv_sqlite={version="0.3.0", path="crates/okv_sqlite", optional=true}
-okv_cloudflare={version="0.3.0", path="crates/okv_cloudflare", optional=true}
-okv_rocksdb={version="0.3.0", path="crates/okv_rocksdb", optional=true}
-okv_memory={version="0.3.0", path="crates/okv_memory", optional=true}
+okv_cloudflare={version="0.4", path="crates/okv_cloudflare", optional=true}
+okv_rocksdb={version="0.4", path="crates/okv_rocksdb", optional=true}
+okv_memory={version="0.4", path="crates/okv_memory", optional=true}
 
 [dev-dependencies]
 eyre="0.6"

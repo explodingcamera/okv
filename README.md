@@ -5,6 +5,9 @@
  
 [![docs.rs](https://img.shields.io/docsrs/okv?logo=rust)](https://docs.rs/okv) [![Crates.io](https://img.shields.io/crates/v/okv.svg?logo=rust)](https://crates.io/crates/okv) [![Crates.io](https://img.shields.io/crates/l/okv.svg)](./LICENSE-APACHE)
 
+> [!WARNING]  
+> The `main` branch contains the latest development changes and is not available for use.
+
 OKV has provides a single, unified API for working with key-value storage, regardless of the underlying database. You get the flexibility to support multiple databases and serialization formats without changing your code, and no more fighting with async/await, lifetimes, or complex database APIs. Serialization is handled automatically, with whatever format you choose, with JSON and MessagePack supported out of the box and great serde support.
 
 ## Features

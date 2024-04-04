@@ -1,8 +1,10 @@
 use futures::future::join_all;
+use okv_core::backend_async::sync_fallback;
 use okv_core::{backend::DatabaseBackend, backend_async::DBColumnAsync};
 use okv_core::{error::Result, traits::Innerable};
 
 use super::okv_err;
+sync_fallback!(CfKVColumn);
 
 pub struct CfKV {
     env: worker::Env,

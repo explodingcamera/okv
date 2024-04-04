@@ -1,6 +1,5 @@
-use std::future::Future;
-
 use crate::error::Result;
+use std::future::Future;
 
 pub trait DBColumnAsync {
     /// Set a key-value pair.
@@ -115,4 +114,52 @@ macro_rules! async_fallback_impl {
     };
 }
 
-pub use async_fallback;
+#[cfg(feature = "async")]
+#[macro_export]
+macro_rules! sync_fallback_impl {
+    () => {
+        fn set(&self, key: impl AsRef<[u8]>, val: impl AsRef<[u8]>) -> okv_core::error::Result<()> {
+            futures::executor::block_on(
+                self.async_set(key.as_ref().to_vec(), val.as_ref().to_vec()),
+            )
+        }
+
+        fn get(&self, key: impl AsRef<[u8]>) -> okv_core::error::Result<Option<Vec<u8>>> {
+            futures::executor::block_on(self.async_get(key.as_ref().to_vec()))
+        }
+
+        fn get_multi<I>(&self, keys: I) -> okv_core::error::Result<Vec<Option<Vec<u8>>>>
+        where
+            I: IntoIterator,
+            I::Item: AsRef<[u8]>,
+        {
+            futures::executor::block_on(self.async_get_multi(keys))
+        }
+
+        fn delete(&self, key: impl AsRef<[u8]>) -> okv_core::error::Result<()> {
+            futures::executor::block_on(self.async_delete(key.as_ref().to_vec()))
+        }
+
+        fn contains(&self, key: impl AsRef<[u8]>) -> okv_core::error::Result<bool> {
+            futures::executor::block_on(self.async_contains(key.as_ref().to_vec()))
+        }
+    };
+}
+
+#[cfg(feature = "async")]
+#[macro_export]
+macro_rules! sync_fallback {
+    ( $column:ty ) => {
+        impl okv_core::backend::DBColumn for $column
+        where
+            $column: okv_core::backend_async::DBColumnAsync,
+        {
+            okv_core::sync_fallback_impl!();
+        }
+    };
+}
+
+#[cfg(feature = "async")]
+pub use sync_fallback;
+#[cfg(feature = "async")]
+pub use sync_fallback_impl;
