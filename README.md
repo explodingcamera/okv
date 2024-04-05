@@ -69,6 +69,10 @@ OKV can work with any type that implements `serde::Serialize`/`serde::Deserializ
 
 If you want to update a type later, I recommend [obake](https://crates.io/crates/obake) that adds versioning and migration support on a per key basis and works well with OKV.
 
+# Versioning
+
+OKV follows [Semantic Versioning](https://semver.org/), but only changes to the user-facing API are considered breaking changes. `okv_core` can have breaking changes in minor versions, so when using the backends directly, their version should match the version of `okv`.
+
 # License
 
 Licensed under either of [Apache License, Version 2.0](./LICENSE-APACHE) or [MIT license](./LICENSE-MIT) at your option.

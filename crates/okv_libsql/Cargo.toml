@@ -12,7 +12,10 @@ publish=false
 
 [dependencies]
 okv_core={version="0.4", path="../core"}
-libsql-client="0.33"
+libsql={version="0.3", default-features=false}
 
 [features]
-multi_threaded=[]
+default=["remote", "local"]
+
+remote=["libsql/remote"]
+local=["libsql/core"]
