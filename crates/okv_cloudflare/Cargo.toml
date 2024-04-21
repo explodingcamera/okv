@@ -13,7 +13,7 @@ publish=false
 [dependencies]
 okv_core={version="0.4", path="../core", features=["async"]}
 worker={version="0.1", optional=true}
-futures="0.3.5"
+futures="0.3"
 
 [features]
 default=["d1", "worker"]
