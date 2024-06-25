@@ -9,6 +9,7 @@ license.workspace=true
 authors.workspace=true
 repository.workspace=true
 publish=false
+rust-version.workspace=true
 
 [dependencies]
 okv_core={version="0.4", path="../core", features=["async"]}

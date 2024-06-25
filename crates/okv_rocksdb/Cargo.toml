@@ -8,6 +8,7 @@ categories=["database", "concurrency", "api-bindings"]
 license.workspace=true
 authors.workspace=true
 repository.workspace=true
+rust-version.workspace=true
 
 [dependencies]
 okv_core={version="0.4", path="../core"}

@@ -1,6 +1,6 @@
 [package]
 name="okv_libsql"
-version="0.4.0+libsql-client.0.33"
+version="0.4.0+libsql.0.4"
 edition.workspace=true
 description="A versatile key-value storage library"
 keywords=["key-value", "database", "rocksdb", "sqlite", "serde"]
@@ -9,10 +9,11 @@ license.workspace=true
 authors.workspace=true
 repository.workspace=true
 publish=false
+rust-version.workspace=true
 
 [dependencies]
 okv_core={version="0.4", path="../core"}
-libsql={version="0.3", default-features=false}
+libsql={version="0.4", default-features=false}
 
 [features]
 default=["remote", "local"]

@@ -9,10 +9,11 @@ license.workspace=true
 authors.workspace=true
 repository.workspace=true
 publish=false
+rust-version.workspace=true
 
 [dependencies]
 okv_core={version="0.4", path="../core"}
-redb="2.1.0"
+redb="2.1.1"
 self_cell="1.0"
 ouroboros="0.18"
 

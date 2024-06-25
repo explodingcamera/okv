@@ -5,6 +5,7 @@ license="MIT OR Apache-2.0"
 authors=["Henry Gressmann <mail@henrygressmann.de>"]
 repository="https://github.com/explodingcamera/okv"
 version="0.4.0"
+rust-version="1.79"
 
 [workspace]
 members=["crates/*"]
@@ -18,6 +19,7 @@ description="A versatile key-value storage library"
 license.workspace=true
 authors.workspace=true
 repository.workspace=true
+rust-version.workspace=true
 
 [dependencies]
 okv_core={version="0.4.0", path="crates/core"}
@@ -29,7 +31,7 @@ okv_memory={version="0.4", path="crates/okv_memory", optional=true}
 
 [dev-dependencies]
 eyre="0.6"
-serde="1"
+serde="1.0"
 
 [package.metadata.docs.rs]
 all-features=true
