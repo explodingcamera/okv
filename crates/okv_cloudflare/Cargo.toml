@@ -1,6 +1,6 @@
 [package]
 name="okv_cloudflare"
-version="0.4.0+worker.0.3"
+version="0.4.0+worker.0.4"
 edition.workspace=true
 description="A versatile key-value storage library"
 keywords=["key-value", "database", "serde", "workers"]
@@ -13,7 +13,7 @@ rust-version.workspace=true
 
 [dependencies]
 okv_core={version="0.4", path="../core", features=["async"]}
-worker={version="0.3", optional=true}
+worker={version="0.4", optional=true}
 futures="0.3"
 
 [features]

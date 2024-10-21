@@ -42,7 +42,7 @@ impl CfD1Column {
     }
 
     fn str_key(&self, key: impl AsRef<[u8]>) -> Result<String> {
-        String::from_utf8(key.as_ref().to_vec()).map_err(|e| {
+        String::from_utf8(key.as_ref().to_vec()).map_err(|_e| {
             okv_core::error::Error::Unknown(
                 "key is not valid utf8 - this is required for Cloudflare D1".to_string(),
             )
@@ -118,8 +118,8 @@ impl DBColumnAsync for CfD1Column {
         #[inline]
         #[worker::send]
         async fn inner(
-            env: &CfD1Column,
-            keys: Result<Vec<String>>,
+            _env: &CfD1Column,
+            _keys: Result<Vec<String>>,
         ) -> Result<Vec<Option<Vec<u8>>>> {
             todo!()
         }
@@ -135,7 +135,7 @@ impl DBColumnAsync for CfD1Column {
 
         #[inline]
         #[worker::send]
-        async fn inner(env: &CfD1Column, key: Result<String>) -> Result<()> {
+        async fn inner(_env: &CfD1Column, _key: Result<String>) -> Result<()> {
             todo!()
         }
 
@@ -150,7 +150,7 @@ impl DBColumnAsync for CfD1Column {
 
         #[inline]
         #[worker::send]
-        async fn inner(env: &CfD1Column, key: Result<String>) -> Result<bool> {
+        async fn inner(_env: &CfD1Column, _key: Result<String>) -> Result<bool> {
             todo!()
         }
 
